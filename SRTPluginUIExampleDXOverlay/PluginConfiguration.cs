@@ -3,11 +3,16 @@
     public class PluginConfiguration
     {
         public bool Debug { get; set; }
-        // public bool NoInventory { get; set; }
+        // public bool ShowInventory { get; set; }
+        public bool CenterPlayerHP { get; set; }
+        public bool CenterBossHP { get; set; }
         public bool ShowHPBars { get; set; }
+        public bool ShowDuffle { get; set; }
+        public int EnemyLimit { get; set; }
         public bool ShowDamagedEnemiesOnly { get; set; }
-        // public bool ShowBossOnly { get; set; }
+        public bool ShowBossOnly { get; set; }
         public bool ShowDifficultyAdjustment { get; set; }
+        public bool ShowPTAS { get; set; }
         public bool ShowPosition { get; set; }
         public bool ShowRotation { get; set; }
         // public bool ShowMapLocations { get; set; }
@@ -23,17 +28,20 @@
         // public float InventoryPositionY { get; set; }
     
         public string StringFontName { get; set; }
-        public string RankString { get; set; }
-        public string ScoreString { get; set; }
     
         public PluginConfiguration()
         {
             Debug = false;
-            // NoInventory = true;
+            // ShowInventory = true;
+            CenterPlayerHP = true;
+            CenterBossHP = true;
+            ShowDuffle = true;
             ShowHPBars = true;
+            EnemyLimit = -1;
             ShowDamagedEnemiesOnly = false;
-            // ShowBossOnly = false;
+            ShowBossOnly = false;
             ShowDifficultyAdjustment = true;
+            ShowPTAS = true;
             // ShowMapLocations = true;
             ShowPosition = true;
             ShowRotation = true;
@@ -46,8 +54,6 @@
             // InventoryPositionX = -1;
             // InventoryPositionY = -1;
             StringFontName = "Courier New";
-            RankString = "DA RANK:";
-            ScoreString = "DA SCORE:";
         }
     }
 }
