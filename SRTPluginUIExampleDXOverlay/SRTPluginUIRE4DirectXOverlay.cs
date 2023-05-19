@@ -489,8 +489,9 @@ namespace SRTPluginUIRE4DirectXOverlay
             }
             else
             {
+                
                 var enemyListLimited = gameMemory.Enemies
-                    .Where(a => a.Health.IsAlive && a.Health.IsDamaged && !a.IsAnimal && !a.IsIgnored)
+                    .Where(a => GetEnemyFilters(a))
                     .OrderBy(a => a.Health.MaxHP)
                     .ThenBy(a => a.Health.Percentage)
                     .ThenByDescending(a => a.Health.CurrentHP)
@@ -501,6 +502,13 @@ namespace SRTPluginUIRE4DirectXOverlay
             }
             
 
+        }
+
+        private bool GetEnemyFilters(PlayerContext enemy)
+        {
+            if (config.ShowDamagedEnemiesOnly)
+                return enemy.Health.IsAlive && !enemy.IsAnimal && !enemy.IsIgnored && enemy.Health.IsDamaged;
+            return enemy.Health.IsAlive && !enemy.IsAnimal && !enemy.IsIgnored;
         }
 
         private void DrawEnemies(PlayerContext enemy, ref float xOffset, ref float yOffset)
