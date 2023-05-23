@@ -26,21 +26,36 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SRTPluginBase" Version="4.0.*-*">
+		<PackageReference Include="GameOverlay.Net" Version="4.3.0" />
+		<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+		<PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\SRTPluginProviderRE4R\SRTPluginProviderRE4R\SRTPluginProducerRE4R.csproj">
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
-		</PackageReference>
+		</ProjectReference>
 	</ItemGroup>
-	
-  <ItemGroup>
-    <PackageReference Include="GameOverlay.Net" Version="4.3.0" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <ProjectReference Include="..\..\SRTPluginProviderRE4R\SRTPluginProviderRE4R\SRTPluginProducerRE4R.csproj" />
-  </ItemGroup>
+
+	<Choose>
+		<When Condition="'$(Configuration)'=='Debug'">
+			<ItemGroup>
+				<ProjectReference Include="..\..\..\SpeedRunTool\SRTPluginBase\src\SRTPluginBase\SRTPluginBase.csproj">
+					<Private>false</Private>
+					<ExcludeAssets>runtime</ExcludeAssets>
+				</ProjectReference>
+			</ItemGroup>
+		</When>
+		<Otherwise>
+			<ItemGroup>
+				<PackageReference Include="SRTPluginBase" Version="4.0.*-*">
+					<Private>false</Private>
+					<ExcludeAssets>runtime</ExcludeAssets>
+				</PackageReference>
+			</ItemGroup>
+		</Otherwise>
+	</Choose>
 
   <Target Name="CopyOutputToDestination" AfterTargets="AfterBuild">
     <ItemGroup>
@@ -48,10 +63,6 @@
     </ItemGroup>
     <Message Text="Copying files: @(OutputFiles)" Importance="high" />
     <Copy SourceFiles="@(OutputFiles)" DestinationFolder="$(CopyDestionationPath)\$(ProjectName)\%(RecursiveDir)" OverwriteReadOnlyFiles="true"></Copy>
-  </Target>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(BuildingInsideVisualStudio)' == 'true' And '$(TJGutjahr)' == 'true'">
-    <Exec Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe&quot; sign /tr &quot;http://timestamp.digicert.com&quot; /td SHA1 /sha1 &quot;027e4c2a016f695ab4adefda2d326199b571bf0a&quot; /fd SHA1 &quot;$(TargetDir)\$(ProjectName).dll&quot;&#xD;&#xA;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe&quot; sign /tr &quot;http://timestamp.digicert.com&quot; /td SHA256 /sha1 &quot;027e4c2a016f695ab4adefda2d326199b571bf0a&quot; /fd SHA256 /as &quot;$(TargetDir)\$(ProjectName).dll&quot;&#xD;&#xA;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe&quot; sign /tr &quot;http://timestamp.digicert.com&quot; /td SHA512 /sha1 &quot;027e4c2a016f695ab4adefda2d326199b571bf0a&quot; /fd SHA512 /as &quot;$(TargetDir)\$(ProjectName).dll&quot;&#xD;&#xA;" />
   </Target>
   
 </Project>

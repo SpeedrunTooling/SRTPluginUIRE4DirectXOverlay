@@ -5,22 +5,25 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using SRTPluginProducerRE4R;
 using SRTPluginProducerRE4R.Structs;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using SRTPluginProducerRE4R.Pages.Shared;
+using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace SRTPluginUIRE4DirectXOverlay
 {
-    public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>
+    public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>, IPluginConsumer
     {
         internal static PluginInfo _Info = new PluginInfo();
         public override IPluginInfo Info => _Info;
         public string RequiredProvider => "SRTPluginProviderRE4R";
         private IPluginHost pluginHost;
+        private SRTPluginProducerRE4R.SRTPluginProducerRE4R producer;
+        private PluginConfiguration Config => (PluginConfiguration)producer.Configuration;
         private IGameMemoryRE4R gameMemory;
+        private CancellationTokenSource renderThreadCTS;
+        private Thread renderThread;
 
         // DirectX Overlay-specific.
         private OverlayWindow _window;
@@ -42,7 +45,6 @@ namespace SRTPluginUIRE4DirectXOverlay
         private SolidBrush _darkgreen;
         private SolidBrush _darkyellow;
 
-        public static PluginConfiguration config;
         private Process GetProcess() => Process.GetProcessesByName("re4")?.FirstOrDefault();
         private Process gameProcess;
         private IntPtr gameWindowHandle;
@@ -58,16 +60,17 @@ namespace SRTPluginUIRE4DirectXOverlay
         private string PartnerName2 = "";
         float? duffel = null;
 
-        public int Startup(IPluginHost _pluginHost)
+        public SRTPluginUIRE4DirectXOverlay(ILogger<SRTPluginUIRE4DirectXOverlay> logger, IPluginHost pluginHost) : base()
         {
+            this.pluginHost = pluginHost;
+            producer = pluginHost.GetPluginReference<SRTPluginProducerRE4R.SRTPluginProducerRE4R>(nameof(SRTPluginProducerRE4R.SRTPluginProducerRE4R));
+
             HPBarColor2 = new SolidBrush[2];
             TextColor2 = new SolidBrush[2];
-            pluginHost = _pluginHost;
-            config = DbLoadConfiguration().ConfigDictionaryToModel<PluginConfiguration>();
 
             gameProcess = GetProcess();
             if (gameProcess == default)
-                return 1;
+                return;
             gameWindowHandle = gameProcess.MainWindowHandle;
 
             DEVMODE devMode = default;
@@ -95,7 +98,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             // Get a refernence to the underlying RenderTarget from SharpDX. This'll be used to draw portions of images.
             _device = (SharpDX.Direct2D1.WindowRenderTarget)typeof(Graphics).GetField("_device", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(_graphics);
 
-            _consolasBold = _graphics?.CreateFont(config.StringFontName, config.FontSize, true);
+            _consolasBold = _graphics?.CreateFont(Config.StringFontName, Config.FontSize, true);
 
             _white = _graphics?.CreateSolidBrush(255, 255, 255);
             _grey = _graphics?.CreateSolidBrush(128, 128, 128);
@@ -112,12 +115,23 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             HPBarColor = _grey;
             TextColor = _white;
-            return 0;
-        }
+
+            renderThreadCTS = new CancellationTokenSource();
+			renderThread = new Thread(ReceiveData)
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.Normal,
+            };
+            renderThread.Start();
+		}
 
         public override void Dispose()
         {
-            _white?.Dispose();
+            renderThreadCTS?.Cancel();
+            renderThread?.Join();
+            renderThread = null;
+            renderThreadCTS?.Dispose();
+			_white?.Dispose();
             _grey?.Dispose();
             _darkred?.Dispose();
             _red?.Dispose();
@@ -152,37 +166,35 @@ namespace SRTPluginUIRE4DirectXOverlay
 			await Task.CompletedTask;
 		}
 
-		public static void SetPluginConfig(PluginConfiguration newConfig)
+        public void ReceiveData()
         {
-            config = newConfig;
-        }
-
-        public int ReceiveData(object gameMemory)
-        {
-            this.gameMemory = (IGameMemoryRE4R)gameMemory;
-            _window?.PlaceAbove(gameWindowHandle);
-            _window?.FitTo(gameWindowHandle, true);
-
-            try
+            while (!renderThreadCTS.Token.IsCancellationRequested)
             {
-                _graphics?.BeginScene();
-                _graphics?.ClearScene();
-                if (config.ScalingFactor != 1f)
-                    _device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(config.ScalingFactor, 0f, 0f, config.ScalingFactor, 0f, 0f);
-                DrawOverlay();
-                if (config.ScalingFactor != 1f)
-                    _device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(1f, 0f, 0f, 1f, 0f, 0f);
+                gameMemory = (IGameMemoryRE4R)producer.Refresh();
+                _window?.PlaceAbove(gameWindowHandle);
+                _window?.FitTo(gameWindowHandle, true);
+
+                try
+                {
+                    _graphics?.BeginScene();
+                    _graphics?.ClearScene();
+                    if (Config.ScalingFactor != 1f)
+                        _device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(Config.ScalingFactor, 0f, 0f, Config.ScalingFactor, 0f, 0f);
+                    DrawOverlay();
+                    if (Config.ScalingFactor != 1f)
+                        _device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(1f, 0f, 0f, 1f, 0f, 0f);
+                }
+                catch (Exception ex)
+                {
+                    //hostDelegates.ExceptionMessage.Invoke(ex);
+                }
+                finally
+                {
+                    _graphics?.EndScene();
+                }
+
+                Thread.Sleep(16); // Scene drawn, now sleep for a bit before we GO AGANE!
             }
-            catch (Exception ex)
-            {
-				//hostDelegates.ExceptionMessage.Invoke(ex);
-			}
-            finally
-            {
-                _graphics?.EndScene();
-            }
-
-            return 0;
         }
 
         private float GetStringSize(string str)
@@ -220,9 +232,9 @@ namespace SRTPluginUIRE4DirectXOverlay
         {
             float widthBar = 352f;
             if (name == "Dog") return;
-            if (config.ShowDamagedEnemiesOnly && percentage == 1f) return;
+            if (Config.ShowDamagedEnemiesOnly && percentage == 1f) return;
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-            float endOfBar = config.PositionX + widthBar - GetStringSize(perc, config.FontSize);
+            float endOfBar = Config.PositionX + widthBar - GetStringSize(perc, Config.FontSize);
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
             _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + 20f);
             _graphics.FillRectangle(_darkred, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
@@ -235,7 +247,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             var bar = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? HPBarColor : name.Contains("_") || name.Contains("Luis") ? HPBarColor2[0] : HPBarColor2[1];
             var txt = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? TextColor : name.Contains("_") || name.Contains("Luis") ? TextColor2[0] : TextColor2[1];
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-            float endOfBar = config.PositionX + 342f - GetStringSize(perc, config.FontSize);
+            float endOfBar = Config.PositionX + 342f - GetStringSize(perc, Config.FontSize);
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + 342f, yOffset + 22f, 4f);
             _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + 340f, yOffset + 20f);
             _graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + (340f * percentage), yOffset + 20f);
@@ -248,12 +260,12 @@ namespace SRTPluginUIRE4DirectXOverlay
             float widthBar = 552f;
             float heightBar = 32f;
             float fSize = 24f;
-            var xOffset = ((1920 / 2) - (widthBar / 2)) * config.ScalingFactor;
-            var yOffset = 4f * config.ScalingFactor;
+            var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
+            var yOffset = 4f * Config.ScalingFactor;
             if (name == "Dog") return;
-            if (config.ShowDamagedEnemiesOnly && percentage == 1f) return;
+            if (Config.ShowDamagedEnemiesOnly && percentage == 1f) return;
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-            float endOfBar = (1920 / 2) - (widthBar / 2) + widthBar - GetStringSize(perc, fSize) - 8f;
+            float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(perc, fSize) - 8f;
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
             _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + heightBar - 2f);
             _graphics.FillRectangle(_darkred, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + heightBar - 2f);
@@ -264,10 +276,10 @@ namespace SRTPluginUIRE4DirectXOverlay
         private void DrawPlayerBar(string name, float chealth, float mhealth, float percentage = 1f)
         {
             float widthBar = 352f;
-            var xOffset = ((1920 / 2) - (widthBar / 2)) * config.ScalingFactor;
-            var yOffset = (1080f - 100f) * config.ScalingFactor;
+            var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
+            var yOffset = (_window.Height - 100f) * Config.ScalingFactor;
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-            float endOfBar = (1920 / 2) - (widthBar / 2) + widthBar - GetStringSize(perc, config.FontSize) - 8f;
+            float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(perc, Config.FontSize) - 8f;
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
             _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + 20f);
             _graphics.FillRectangle(HPBarColor, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
@@ -278,12 +290,12 @@ namespace SRTPluginUIRE4DirectXOverlay
         private void DrawPartnerBar(string name, float chealth, float mhealth, float percentage = 1f)
         {
             float widthBar = 352f;
-            var xOffset = ((1920 / 2) - (widthBar / 2)) * config.ScalingFactor;
-            var yOffset = (1080f - 73f) * config.ScalingFactor;
+            var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
+            var yOffset = (_window.Height - 73f) * Config.ScalingFactor;
             var bar = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? HPBarColor : name.Contains("_") || name.Contains("Luis") ? HPBarColor2[0] : HPBarColor2[1];
             var txt = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? TextColor : name.Contains("_") || name.Contains("Luis") ? TextColor2[0] : TextColor2[1];
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-            float endOfBar = (1920 / 2) - (widthBar / 2) + widthBar - GetStringSize(perc, config.FontSize) - 8f;
+            float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(perc, Config.FontSize) - 8f;
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
             _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + 20f);
             _graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
@@ -350,15 +362,15 @@ namespace SRTPluginUIRE4DirectXOverlay
         private void DrawOverlay()
         {
             if (gameMemory.Timer.MeasureDemoSpendingTime || gameMemory.Timer.MeasurePauseSpendingTime || gameMemory.Timer.MeasureInventorySpendingTime || gameMemory.IsInGameShopOpen) return;
-            float baseXOffset = config.PositionX;
-            float baseYOffset = config.PositionY;
+            float baseXOffset = Config.PositionX;
+            float baseYOffset = Config.PositionY;
 
             // Player HP
             float statsXOffset = baseXOffset + 5f;
             float statsYOffset = baseYOffset + 0f;
 
             float textOffsetX = 0f;
-            textOffsetX = config.PositionX + 15f;
+            textOffsetX = Config.PositionX + 15f;
             DrawTextBlock(ref textOffsetX, ref statsYOffset, "IGT:", gameMemory.Timer.IGTFormattedString, _lawngreen);
 
             PlayerName = string.Format("{0}: ", gameMemory.PlayerContext.SurvivorTypeString);
@@ -368,69 +380,69 @@ namespace SRTPluginUIRE4DirectXOverlay
             SetColors2(0);
             SetColors2(1);
 
-            if (config.ShowHPBars)
+            if (Config.ShowHPBars)
             {
                 if (gameMemory.PlayerContext.IsLoaded)
-                    if (config.CenterPlayerHP)
+                    if (Config.CenterPlayerHP)
                         DrawPlayerBar(PlayerName, gameMemory.PlayerContext.Health.CurrentHP, gameMemory.PlayerContext.Health.MaxHP, gameMemory.PlayerContext.Health.Percentage);
                     else
                         DrawHealthBar(ref statsXOffset, ref statsYOffset, PlayerName, gameMemory.PlayerContext.Health.CurrentHP, gameMemory.PlayerContext.Health.MaxHP, gameMemory.PlayerContext.Health.Percentage);
                 if (gameMemory.PartnerContext[0] != null && gameMemory.PartnerContext[0].IsLoaded)
-                    if (config.CenterPlayerHP)
+                    if (Config.CenterPlayerHP)
                         DrawPartnerBar(PartnerName, gameMemory.PartnerContext[0].Health.CurrentHP, gameMemory.PartnerContext[0].Health.MaxHP, gameMemory.PartnerContext[0].Health.Percentage);
                     else
                         DrawHealthBar(ref statsXOffset, ref statsYOffset, PartnerName, gameMemory.PartnerContext[0].Health.CurrentHP, gameMemory.PartnerContext[0].Health.MaxHP, gameMemory.PartnerContext[0].Health.Percentage);
                 if (gameMemory.PartnerContext[1] != null && gameMemory.PartnerContext[1].IsLoaded)
-                    if (!config.CenterPlayerHP)
+                    if (!Config.CenterPlayerHP)
                         DrawHealthBar(ref statsXOffset, ref statsYOffset, PartnerName2, gameMemory.PartnerContext[1].Health.CurrentHP, gameMemory.PartnerContext[1].Health.MaxHP, gameMemory.PartnerContext[1].Health.Percentage);
             }
 
             textOffsetX = 0f;
-            if (config.Debug)
+            if (Config.Debug)
             {
-                _graphics?.DrawText(_consolasBold, config.FontSize, _grey, statsXOffset, statsYOffset += 24, "Raw IGT");
-                _graphics?.DrawText(_consolasBold, config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("A:{0}", gameMemory.Timer.GameSaveData.GameElapsedTime.ToString("00000000000000000000")));
-                _graphics?.DrawText(_consolasBold, config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("C:{0}", gameMemory.Timer.GameSaveData.DemoSpendingTime.ToString("00000000000000000000")));
-                _graphics?.DrawText(_consolasBold, config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("M:{0}", gameMemory.Timer.GameSaveData.InventorySpendingTime.ToString("00000000000000000000")));
-                _graphics?.DrawText(_consolasBold, config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("P:{0}", gameMemory.Timer.GameSaveData.PauseSpendingTime.ToString("00000000000000000000")));
+                _graphics?.DrawText(_consolasBold, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, "Raw IGT");
+                _graphics?.DrawText(_consolasBold, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("A:{0}", gameMemory.Timer.GameSaveData.GameElapsedTime.ToString("00000000000000000000")));
+                _graphics?.DrawText(_consolasBold, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("C:{0}", gameMemory.Timer.GameSaveData.DemoSpendingTime.ToString("00000000000000000000")));
+                _graphics?.DrawText(_consolasBold, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("M:{0}", gameMemory.Timer.GameSaveData.InventorySpendingTime.ToString("00000000000000000000")));
+                _graphics?.DrawText(_consolasBold, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("P:{0}", gameMemory.Timer.GameSaveData.PauseSpendingTime.ToString("00000000000000000000")));
             }
 
-            if (config.ShowPTAS)
+            if (Config.ShowPTAS)
             {
-                textOffsetX = config.PositionX + 15f;
+                textOffsetX = Config.PositionX + 15f;
                 statsYOffset += 24f;
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "PTAS:", gameMemory.PTAS.ToString(), _lawngreen);
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "Spinel:", gameMemory.Spinel.ToString(), _lawngreen);
             }
 
-            if (config.ShowPosition)
+            if (Config.ShowPosition)
             {
-                textOffsetX = config.PositionX + 15f;
+                textOffsetX = Config.PositionX + 15f;
                 statsYOffset += 24f;
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "X:", gameMemory.PlayerContext.Position.X.ToString("F3"), _lawngreen);
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "Y:", gameMemory.PlayerContext.Position.Y.ToString("F3"), _lawngreen);
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "Z:", gameMemory.PlayerContext.Position.Z.ToString("F3"), _lawngreen);
             }
 
-            if (config.ShowRotation)
+            if (Config.ShowRotation)
             {
-                textOffsetX = config.PositionX + 15f;
+                textOffsetX = Config.PositionX + 15f;
                 statsYOffset += 24;
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "RW:", gameMemory.PlayerContext.Rotation.W.ToString("F3"), _lawngreen);
                 DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "RY:", gameMemory.PlayerContext.Rotation.Y.ToString("F3"), _lawngreen);
             }
 
-            if (config.ShowDifficultyAdjustment)
+            if (Config.ShowDifficultyAdjustment)
             {
-                textOffsetX = config.PositionX + 15f;
+                textOffsetX = Config.PositionX + 15f;
                 DrawTextBlock(ref textOffsetX, ref statsYOffset, "Rank:", gameMemory.Rank.Rank.ToString(), _lawngreen);
-                textOffsetX = config.PositionX + 15f;
+                textOffsetX = Config.PositionX + 15f;
                 DrawTextBlock(ref textOffsetX, ref statsYOffset, "Action Point:", gameMemory.Rank.ActionPoint.ToString(), _lawngreen);
-                textOffsetX = config.PositionX + 15f;
+                textOffsetX = Config.PositionX + 15f;
                 DrawTextBlock(ref textOffsetX, ref statsYOffset, "Item Point:", gameMemory.Rank.ItemPoint.ToString(), _lawngreen);
             }
 
-            textOffsetX = config.PositionX + 15f;
+            textOffsetX = Config.PositionX + 15f;
             DrawTextBlock(ref textOffsetX, ref statsYOffset, "Kill Count:", gameMemory.GameStatsKillCountElement.Count.ToString(), _lawngreen);
 
             if (gameMemory.PlayerContext == null)
@@ -443,13 +455,13 @@ namespace SRTPluginUIRE4DirectXOverlay
                 else if (gameMemory.PlayerContext.Position.Y < -0.5f && gameMemory.PlayerContext.Position.Y > -1)
                     duffel = gameMemory.PlayerContext.Position.Y;
 
-                if (config.ShowDuffle)
+                if (Config.ShowDuffle)
                     DrawTextBlock(ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? _lawngreen : _red);
             }
 
             // Enemy HP
-            var xOffset = config.EnemyHPPositionX == -1 ? statsXOffset : config.EnemyHPPositionX;
-            var yOffset = config.EnemyHPPositionY == -1 ? statsYOffset : config.EnemyHPPositionY;
+            var xOffset = Config.EnemyHPPositionX == -1 ? statsXOffset : Config.EnemyHPPositionX;
+            var yOffset = Config.EnemyHPPositionY == -1 ? statsYOffset : Config.EnemyHPPositionY;
             if (PlayerName.Contains("Ashley"))
             {
                 DrawTextBlock(ref textOffsetX, ref statsYOffset, "Enemy Count:", gameMemory.Enemies.Where(a => a.Health.IsAlive).ToArray().Count().ToString(), _lawngreen);
@@ -457,7 +469,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             }
 
             // Show Damaged Enemies Only
-            if (config.EnemyLimit == -1)
+            if (Config.EnemyLimit == -1)
             {
                 var enemyList = gameMemory.Enemies
                     .Where(a => GetEnemyFilters(a))
@@ -465,7 +477,7 @@ namespace SRTPluginUIRE4DirectXOverlay
                     .ThenBy(a => a.Health.Percentage)
                     .ThenByDescending(a => a.Health.CurrentHP);
 
-                if (config.ShowHPBars)
+                if (Config.ShowHPBars)
                     foreach (PlayerContext enemy in enemyList)
                         DrawEnemies(enemy, ref xOffset, ref yOffset);
             }
@@ -476,9 +488,9 @@ namespace SRTPluginUIRE4DirectXOverlay
                     .OrderBy(a => a.Health.MaxHP)
                     .ThenBy(a => a.Health.Percentage)
                     .ThenByDescending(a => a.Health.CurrentHP)
-                    .Take(config.EnemyLimit);
+                    .Take(Config.EnemyLimit);
 
-                if (config.ShowHPBars)
+                if (Config.ShowHPBars)
                     foreach (PlayerContext enemy in enemyListLimited)
                         DrawEnemies(enemy, ref xOffset, ref yOffset);
             }
@@ -486,27 +498,29 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         private bool GetEnemyFilters(PlayerContext enemy)
         {
-            if (config.ShowDamagedEnemiesOnly)
+            if (Config.ShowDamagedEnemiesOnly)
                 return enemy.Health.IsAlive && !enemy.IsAnimal && !enemy.IsIgnored && enemy.Health.IsDamaged;
             return enemy.Health.IsAlive && !enemy.IsAnimal && !enemy.IsIgnored;
         }
 
         private void DrawEnemies(PlayerContext enemy, ref float xOffset, ref float yOffset)
         {
-            if (config.ShowBossOnly)
+            if (Config.ShowBossOnly)
             {
                 if (!enemy.IsBoss) return;
                 if (enemy.IsBoss)
                 {
-                    if (config.CenterBossHP) DrawBossBar(enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
+                    if (Config.CenterBossHP) DrawBossBar(enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
                     else DrawProgressBar(ref xOffset, ref yOffset, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
                 }
             }
-            else if (config.CenterBossHP && enemy.IsBoss)
+            else if (Config.CenterBossHP && enemy.IsBoss)
                 DrawBossBar(enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
             else
                 DrawProgressBar(ref xOffset, ref yOffset, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
         }
+
+        public bool Equals(IPluginConsumer? other) => (this as IPluginConsumer).Equals(other);
     }
 
 }
