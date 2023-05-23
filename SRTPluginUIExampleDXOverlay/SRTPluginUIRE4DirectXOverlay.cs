@@ -29,27 +29,18 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         private Font _consolasBold;
 
-        private SolidBrush _black;
         private SolidBrush _white;
         private SolidBrush _grey;
         private SolidBrush _darkred;
         private SolidBrush _red;
-        private SolidBrush _yellow_500;
-        private SolidBrush _slate_800;
-        private SolidBrush _slate_900;
-        private SolidBrush _sky_500;
         private SolidBrush _lightred;
         private SolidBrush _lightyellow;
         private SolidBrush _lightgreen;
         private SolidBrush _lawngreen;
-        private SolidBrush _goldenrod;
         private SolidBrush _greydark;
         private SolidBrush _greydarker;
         private SolidBrush _darkgreen;
         private SolidBrush _darkyellow;
-
-        private SolidBrush _lightpurple;
-        private SolidBrush _darkpurple;
 
         public static PluginConfiguration config;
         private Process GetProcess() => Process.GetProcessesByName("re4")?.FirstOrDefault();
@@ -67,12 +58,11 @@ namespace SRTPluginUIRE4DirectXOverlay
         private string PartnerName2 = "";
         float? duffel = null;
 
-        [STAThread]
         public int Startup(IPluginHost _pluginHost)
         {
             HPBarColor2 = new SolidBrush[2];
             TextColor2 = new SolidBrush[2];
-            this.pluginHost = _pluginHost;
+            pluginHost = _pluginHost;
             config = DbLoadConfiguration().ConfigDictionaryToModel<PluginConfiguration>();
 
             gameProcess = GetProcess();
@@ -107,11 +97,6 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             _consolasBold = _graphics?.CreateFont(config.StringFontName, config.FontSize, true);
 
-            _yellow_500 = _graphics?.CreateSolidBrush(245, 158, 11, 255);
-            _sky_500 = _graphics?.CreateSolidBrush(14, 165, 233, 255);
-            _slate_800 = _graphics?.CreateSolidBrush(30, 41, 59, 100);
-            _slate_900 = _graphics?.CreateSolidBrush(15, 23, 42, 255);
-            _black = _graphics?.CreateSolidBrush(0, 0, 0);
             _white = _graphics?.CreateSolidBrush(255, 255, 255);
             _grey = _graphics?.CreateSolidBrush(128, 128, 128);
             _greydark = _graphics?.CreateSolidBrush(64, 64, 64);
@@ -124,38 +109,26 @@ namespace SRTPluginUIRE4DirectXOverlay
             _lightyellow = _graphics?.CreateSolidBrush(255, 255, 150);
             _lightgreen = _graphics?.CreateSolidBrush(150, 255, 150);
             _lawngreen = _graphics?.CreateSolidBrush(124, 252, 0);
-            _goldenrod = _graphics?.CreateSolidBrush(218, 165, 32);
-
-            _lightpurple = _graphics?.CreateSolidBrush(222, 182, 255);
-            _darkpurple = _graphics?.CreateSolidBrush(73, 58, 85, 100);
 
             HPBarColor = _grey;
             TextColor = _white;
-			return 0;
+            return 0;
         }
 
         public override void Dispose()
         {
-            _black?.Dispose();
             _white?.Dispose();
             _grey?.Dispose();
             _darkred?.Dispose();
             _red?.Dispose();
-            _yellow_500?.Dispose();
-            _slate_800?.Dispose();
-            _slate_900?.Dispose();
-            _sky_500?.Dispose();
             _lightred?.Dispose();
             _lightyellow?.Dispose();
             _lightgreen?.Dispose();
             _lawngreen?.Dispose();
-            _goldenrod?.Dispose();
             _greydark?.Dispose();
             _greydarker?.Dispose();
             _darkgreen?.Dispose();
             _darkyellow?.Dispose();
-            _lightpurple?.Dispose();
-            _darkpurple?.Dispose();
             HPBarColor?.Dispose();
             TextColor?.Dispose();
             HPBarColor2[0]?.Dispose();
