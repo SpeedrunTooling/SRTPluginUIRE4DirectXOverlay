@@ -65,64 +65,69 @@ namespace SRTPluginUIRE4DirectXOverlay
             this.pluginHost = pluginHost;
             producer = pluginHost.GetPluginReference<SRTPluginProducerRE4R.SRTPluginProducerRE4R>(nameof(SRTPluginProducerRE4R.SRTPluginProducerRE4R));
 
-            HPBarColor2 = new SolidBrush[2];
-            TextColor2 = new SolidBrush[2];
+			HPBarColor2 = new SolidBrush[2];
+			TextColor2 = new SolidBrush[2];
 
-            gameProcess = GetProcess();
-            if (gameProcess == default)
-                return;
-            gameWindowHandle = gameProcess.MainWindowHandle;
+			Init();
+		}
 
-            DEVMODE devMode = default;
-            devMode.dmSize = (short)Marshal.SizeOf<DEVMODE>();
-            PInvoke.EnumDisplaySettings(null, -1, ref devMode);
+        public void Init()
+        {
+			gameProcess = GetProcess();
+			if (gameProcess == default)
+				return;
+			gameWindowHandle = gameProcess.MainWindowHandle;
 
-            // Create and initialize the overlay window.
-            _window = new OverlayWindow(0, 0, devMode.dmPelsWidth, devMode.dmPelsHeight);
-            _window?.Create();
+			DEVMODE devMode = default;
+			devMode.dmSize = (short)Marshal.SizeOf<DEVMODE>();
+			PInvoke.EnumDisplaySettings(null, -1, ref devMode);
 
-            // Create and initialize the graphics object.
-            _graphics = new Graphics()
-            {
-                MeasureFPS = false,
-                PerPrimitiveAntiAliasing = false,
-                TextAntiAliasing = true,
-                UseMultiThreadedFactories = false,
-                VSync = false,
-                Width = _window.Width,
-                Height = _window.Height,
-                WindowHandle = _window.Handle
-            };
-            _graphics?.Setup();
+			// Create and initialize the overlay window.
+			_window = new OverlayWindow(0, 0, devMode.dmPelsWidth, devMode.dmPelsHeight);
+			_window?.Create();
 
-            // Get a refernence to the underlying RenderTarget from SharpDX. This'll be used to draw portions of images.
-            _device = (SharpDX.Direct2D1.WindowRenderTarget)typeof(Graphics).GetField("_device", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(_graphics);
+			// Create and initialize the graphics object.
+			_graphics = new Graphics()
+			{
+				MeasureFPS = false,
+				PerPrimitiveAntiAliasing = false,
+				TextAntiAliasing = true,
+				UseMultiThreadedFactories = false,
+				VSync = false,
+				Width = _window.Width,
+				Height = _window.Height,
+				WindowHandle = _window.Handle
+			};
+			_graphics?.Setup();
 
-            _consolasBold = _graphics?.CreateFont(Config.StringFontName, Config.FontSize, true);
+			// Get a refernence to the underlying RenderTarget from SharpDX. This'll be used to draw portions of images.
+			_device = (SharpDX.Direct2D1.WindowRenderTarget)typeof(Graphics).GetField("_device", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(_graphics);
 
-            _white = _graphics?.CreateSolidBrush(255, 255, 255);
-            _grey = _graphics?.CreateSolidBrush(128, 128, 128);
-            _greydark = _graphics?.CreateSolidBrush(64, 64, 64);
-            _greydarker = _graphics?.CreateSolidBrush(24, 24, 24);
-            _darkred = _graphics?.CreateSolidBrush(153, 0, 0, 100);
-            _darkgreen = _graphics?.CreateSolidBrush(0, 102, 0, 100);
-            _darkyellow = _graphics?.CreateSolidBrush(218, 165, 32, 100);
-            _red = _graphics?.CreateSolidBrush(255, 0, 0);
-            _lightred = _graphics?.CreateSolidBrush(255, 172, 172);
-            _lightyellow = _graphics?.CreateSolidBrush(255, 255, 150);
-            _lightgreen = _graphics?.CreateSolidBrush(150, 255, 150);
-            _lawngreen = _graphics?.CreateSolidBrush(124, 252, 0);
+			_consolasBold = _graphics?.CreateFont(Config.StringFontName, Config.FontSize, true);
 
-            HPBarColor = _grey;
-            TextColor = _white;
+			_white = _graphics?.CreateSolidBrush(255, 255, 255);
+			_grey = _graphics?.CreateSolidBrush(128, 128, 128);
+			_greydark = _graphics?.CreateSolidBrush(64, 64, 64);
+			_greydarker = _graphics?.CreateSolidBrush(24, 24, 24);
+			_darkred = _graphics?.CreateSolidBrush(153, 0, 0, 100);
+			_darkgreen = _graphics?.CreateSolidBrush(0, 102, 0, 100);
+			_darkyellow = _graphics?.CreateSolidBrush(218, 165, 32, 100);
+			_red = _graphics?.CreateSolidBrush(255, 0, 0);
+			_lightred = _graphics?.CreateSolidBrush(255, 172, 172);
+			_lightyellow = _graphics?.CreateSolidBrush(255, 255, 150);
+			_lightgreen = _graphics?.CreateSolidBrush(150, 255, 150);
+			_lawngreen = _graphics?.CreateSolidBrush(124, 252, 0);
 
-            renderThreadCTS = new CancellationTokenSource();
+			HPBarColor = _grey;
+			TextColor = _white;
+
+			renderThreadCTS = new CancellationTokenSource();
 			renderThread = new Thread(ReceiveData)
-            {
-                IsBackground = true,
-                Priority = ThreadPriority.Normal,
-            };
-            renderThread.Start();
+			{
+				IsBackground = true,
+				Priority = ThreadPriority.Normal,
+			};
+			renderThread.Start();
 		}
 
         public override void Dispose()
@@ -168,7 +173,8 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         public void ReceiveData()
         {
-            while (!renderThreadCTS.Token.IsCancellationRequested)
+
+			while (!renderThreadCTS.Token.IsCancellationRequested)
             {
                 gameMemory = (IGameMemoryRE4R)producer.Refresh();
                 _window?.PlaceAbove(gameWindowHandle);
@@ -230,7 +236,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         private void DrawProgressBar(ref float xOffset, ref float yOffset, string name, float chealth, float mhealth, float percentage = 1f)
         {
-            float widthBar = 352f;
+            float widthBar = 200f;
             if (name == "Dog") return;
             if (Config.ShowDamagedEnemiesOnly && percentage == 1f) return;
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
@@ -238,21 +244,23 @@ namespace SRTPluginUIRE4DirectXOverlay
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
             _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + 20f);
             _graphics.FillRectangle(_darkred, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
-            _graphics.DrawText(_consolasBold, 16f, _lightred, xOffset + 10f, yOffset + 2, string.Format("{0} {1} / {2}", name.Replace("_", " "), chealth, mhealth));
-            _graphics.DrawText(_consolasBold, 16f, _lightred, endOfBar, yOffset + 2, perc);
+            _graphics.DrawText(_consolasBold, Config.FontSize, _lightred, xOffset + 10f, yOffset, string.Format("{0} / {1}", chealth, mhealth));
+            _graphics.DrawText(_consolasBold, Config.FontSize, _lightred, endOfBar, yOffset, perc);
         }
 
         private void DrawHealthBar(ref float xOffset, ref float yOffset, string name, float chealth, float mhealth, float percentage = 1f)
         {
-            var bar = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? HPBarColor : name.Contains("_") || name.Contains("Luis") ? HPBarColor2[0] : HPBarColor2[1];
+			float widthBar = 250f;
+			float heightBar = Config.FontSize + 8f;
+			var bar = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? HPBarColor : name.Contains("_") || name.Contains("Luis") ? HPBarColor2[0] : HPBarColor2[1];
             var txt = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? TextColor : name.Contains("_") || name.Contains("Luis") ? TextColor2[0] : TextColor2[1];
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-            float endOfBar = Config.PositionX + 342f - GetStringSize(perc, Config.FontSize);
-            _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + 342f, yOffset + 22f, 4f);
-            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + 340f, yOffset + 20f);
-            _graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + (340f * percentage), yOffset + 20f);
-            _graphics.DrawText(_consolasBold, 16f, txt, xOffset + 10f, yOffset + 2, string.Format("{0}{1} / {2}", name.Replace("_", ""), chealth, mhealth));
-            _graphics.DrawText(_consolasBold, 16f, txt, endOfBar, yOffset + 2, perc);
+            float endOfBar = Config.PositionX + widthBar - GetStringSize(perc, Config.FontSize);
+            _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
+            _graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
+            _graphics.DrawText(_consolasBold, Config.FontSize, txt, xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+            _graphics.DrawText(_consolasBold, Config.FontSize, txt, endOfBar, yOffset, perc);
         }
 
         private void DrawBossBar(string name, float chealth, float mhealth, float percentage = 1f)
@@ -267,40 +275,43 @@ namespace SRTPluginUIRE4DirectXOverlay
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
             float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(perc, fSize) - 8f;
             _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
-            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + heightBar - 2f);
+            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
             _graphics.FillRectangle(_darkred, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + heightBar - 2f);
-            _graphics.DrawText(_consolasBold, fSize, _lightred, xOffset + 10f, yOffset + 3, string.Format("{0} {1} / {2}", name.Replace("_", " "), chealth, mhealth));
-            _graphics.DrawText(_consolasBold, fSize, _lightred, endOfBar, yOffset + 3, perc);
+            _graphics.DrawText(_consolasBold, fSize, _lightred, xOffset + 10f, yOffset, string.Format("{0} {1} / {2}", name.Replace("_", " ").ToUpper(), chealth, mhealth));
+            _graphics.DrawText(_consolasBold, fSize, _lightred, endOfBar, yOffset, perc);
         }
 
         private void DrawPlayerBar(string name, float chealth, float mhealth, float percentage = 1f)
         {
-            float widthBar = 352f;
-            var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
-            var yOffset = (_window.Height - 100f) * Config.ScalingFactor;
-            string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
+			float widthBar = 250f;
+			float heightBar = Config.FontSize + 8f;
+			var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
+			var yOffset = (_window.Height - 100f) * Config.ScalingFactor;
+			// var yOffset = ((_window.Height / 2f) - (heightBar / 2f)) * Config.ScalingFactor;
+			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
             float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(perc, Config.FontSize) - 8f;
-            _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
-            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + 20f);
-            _graphics.FillRectangle(HPBarColor, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
-            _graphics.DrawText(_consolasBold, 16f, TextColor, xOffset + 10f, yOffset + 2, string.Format("{0}{1} / {2}", name.Replace("_", ""), chealth, mhealth));
-            _graphics.DrawText(_consolasBold, 16f, TextColor, endOfBar, yOffset + 2, perc);
+            _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
+            _graphics.FillRectangle(HPBarColor, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
+            _graphics.DrawText(_consolasBold, Config.FontSize, TextColor, xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+            _graphics.DrawText(_consolasBold, Config.FontSize, TextColor, endOfBar, yOffset, perc);
         }
 
         private void DrawPartnerBar(string name, float chealth, float mhealth, float percentage = 1f)
         {
-            float widthBar = 352f;
-            var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
-            var yOffset = (_window.Height - 73f) * Config.ScalingFactor;
+			float widthBar = 250f;
+			float heightBar = Config.FontSize + 8f;
+			var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * Config.ScalingFactor;
+            var yOffset = (_window.Height - 70f) * Config.ScalingFactor;
             var bar = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? HPBarColor : name.Contains("_") || name.Contains("Luis") ? HPBarColor2[0] : HPBarColor2[1];
             var txt = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? TextColor : name.Contains("_") || name.Contains("Luis") ? TextColor2[0] : TextColor2[1];
             string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
             float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(perc, Config.FontSize) - 8f;
-            _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
-            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + 20f);
-            _graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
-            _graphics.DrawText(_consolasBold, 16f, txt, xOffset + 10f, yOffset + 2, string.Format("{0}{1} / {2}", name.Replace("_", ""), chealth, mhealth));
-            _graphics.DrawText(_consolasBold, 16f, txt, endOfBar, yOffset + 2, perc);
+            _graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+            _graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
+            _graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
+            _graphics.DrawText(_consolasBold, Config.FontSize, txt, xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+            _graphics.DrawText(_consolasBold, Config.FontSize, txt, endOfBar, yOffset, perc);
         }
 
         private void SetColors()
