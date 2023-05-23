@@ -25,8 +25,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="UIComponents.cs" />
+  </ItemGroup>
+
 	<ItemGroup>
-		<PackageReference Include="GameOverlay.Net" Version="4.3.0" />
+		<PackageReference Include="GameOverlay.Net" Version="4.3.1" />
 		<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 		<PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
 	</ItemGroup>
