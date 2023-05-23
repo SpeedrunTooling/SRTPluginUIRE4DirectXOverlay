@@ -13,14 +13,15 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         public Uri MoreInfoURL => new Uri("https://github.com/VideoGameRoulette/SRTPluginUIRE4DirectXOverlay");
 
-        public int VersionMajor => assemblyFileVersion.ProductMajorPart;
+		public int VersionMajor => assemblyVersion?.Major ?? 0;
 
-        public int VersionMinor => assemblyFileVersion.ProductMinorPart;
+		public int VersionMinor => assemblyVersion?.Minor ?? 0;
 
-        public int VersionBuild => assemblyFileVersion.ProductBuildPart;
+		public int VersionBuild => assemblyVersion?.Build ?? 0;
 
-        public int VersionRevision => assemblyFileVersion.ProductPrivatePart;
+		public int VersionRevision => assemblyVersion?.Revision ?? 0;
 
-        private System.Diagnostics.FileVersionInfo assemblyFileVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
-    }
+		private readonly Version? assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+		public bool Equals(IPluginInfo? other) => Equals(this, other);
+	}
 }

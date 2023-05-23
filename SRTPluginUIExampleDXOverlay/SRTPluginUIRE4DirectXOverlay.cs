@@ -8,15 +8,18 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using SRTPluginProducerRE4R;
 using SRTPluginProducerRE4R.Structs;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using SRTPluginProducerRE4R.Pages.Shared;
 
 namespace SRTPluginUIRE4DirectXOverlay
 {
-    public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>, IPluginUI
+    public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>
     {
         internal static PluginInfo _Info = new PluginInfo();
         public override IPluginInfo Info => _Info;
         public string RequiredProvider => "SRTPluginProviderRE4R";
-        private IPluginHostDelegates hostDelegates;
+        private IPluginHost pluginHost;
         private IGameMemoryRE4R gameMemory;
 
         // DirectX Overlay-specific.
@@ -65,11 +68,11 @@ namespace SRTPluginUIRE4DirectXOverlay
         float? duffel = null;
 
         [STAThread]
-        public override int Startup(IPluginHostDelegates hostDelegates)
+        public int Startup(IPluginHost _pluginHost)
         {
             HPBarColor2 = new SolidBrush[2];
             TextColor2 = new SolidBrush[2];
-            this.hostDelegates = hostDelegates;
+            this.pluginHost = _pluginHost;
             config = DbLoadConfiguration().ConfigDictionaryToModel<PluginConfiguration>();
 
             gameProcess = GetProcess();
@@ -128,11 +131,10 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             HPBarColor = _grey;
             TextColor = _white;
-
-            return 0;
+			return 0;
         }
 
-        public override int Shutdown()
+        public override void Dispose()
         {
             _black?.Dispose();
             _white?.Dispose();
@@ -168,10 +170,16 @@ namespace SRTPluginUIRE4DirectXOverlay
             _window = null;
             gameProcess?.Dispose();
             gameProcess = null;
-            return 0;
+            return;
         }
 
-        public static void SetPluginConfig(PluginConfiguration newConfig)
+		public override async ValueTask DisposeAsync()
+		{
+            Dispose();
+			await Task.CompletedTask;
+		}
+
+		public static void SetPluginConfig(PluginConfiguration newConfig)
         {
             config = newConfig;
         }
