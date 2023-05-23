@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Platforms>x64</Platforms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
@@ -25,18 +25,21 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+	<ItemGroup>
+		<PackageReference Include="SRTPluginBase" Version="4.0.*-*">
+			<Private>false</Private>
+			<ExcludeAssets>runtime</ExcludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	
   <ItemGroup>
     <PackageReference Include="GameOverlay.Net" Version="4.3.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
   </ItemGroup>
-
+	
   <ItemGroup>
-    <ProjectReference Include="..\..\SRTHost\SRTPluginBase\SRTPluginBase.csproj">
-      <Private>false</Private>
-      <ExcludeAssets>runtime</ExcludeAssets>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SRTPluginProviderRE4R\SRTPluginProviderRE4R\SRTPluginProviderRE4R.csproj" />
+    <ProjectReference Include="..\..\SRTPluginProviderRE4R\SRTPluginProviderRE4R\SRTPluginProducerRE4R.csproj" />
   </ItemGroup>
 
   <Target Name="CopyOutputToDestination" AfterTargets="AfterBuild">

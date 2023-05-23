@@ -1,17 +1,17 @@
 ﻿using GameOverlay.Drawing;
 using GameOverlay.Windows;
 using SRTPluginBase;
-using SRTPluginProviderRE4R;
-using SRTPluginProviderRE4R.Structs;
 using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using SRTPluginProducerRE4R;
+using SRTPluginProducerRE4R.Structs;
 
 namespace SRTPluginUIRE4DirectXOverlay
 {
-    public class SRTPluginUIRE4DirectXOverlay : PluginBase, IPluginUI
+    public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>, IPluginUI
     {
         internal static PluginInfo _Info = new PluginInfo();
         public override IPluginInfo Info => _Info;
@@ -48,7 +48,7 @@ namespace SRTPluginUIRE4DirectXOverlay
         private SolidBrush _lightpurple;
         private SolidBrush _darkpurple;
 
-        public PluginConfiguration config;
+        public static PluginConfiguration config;
         private Process GetProcess() => Process.GetProcessesByName("re4")?.FirstOrDefault();
         private Process gameProcess;
         private IntPtr gameWindowHandle;
@@ -70,7 +70,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             HPBarColor2 = new SolidBrush[2];
             TextColor2 = new SolidBrush[2];
             this.hostDelegates = hostDelegates;
-            config = LoadConfiguration<PluginConfiguration>();
+            config = DbLoadConfiguration().ConfigDictionaryToModel<PluginConfiguration>();
 
             gameProcess = GetProcess();
             if (gameProcess == default)
@@ -134,8 +134,6 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         public override int Shutdown()
         {
-            SaveConfiguration(config);
-
             _black?.Dispose();
             _white?.Dispose();
             _grey?.Dispose();
@@ -162,19 +160,20 @@ namespace SRTPluginUIRE4DirectXOverlay
             HPBarColor2[1]?.Dispose();
             TextColor2[0]?.Dispose();
             TextColor2[1]?.Dispose();
-
             _consolasBold?.Dispose();
-
             _device = null; // We didn't create this object so we probably shouldn't be the one to dispose of it. Just set the variable to null so the reference isn't held.
             _graphics?.Dispose(); // This should technically be the one to dispose of the _device object since it was pulled from this instance.
             _graphics = null;
             _window?.Dispose();
             _window = null;
-
             gameProcess?.Dispose();
             gameProcess = null;
-
             return 0;
+        }
+
+        public static void SetPluginConfig(PluginConfiguration newConfig)
+        {
+            config = newConfig;
         }
 
         public int ReceiveData(object gameMemory)
@@ -195,8 +194,8 @@ namespace SRTPluginUIRE4DirectXOverlay
             }
             catch (Exception ex)
             {
-                hostDelegates.ExceptionMessage.Invoke(ex);
-            }
+				//hostDelegates.ExceptionMessage.Invoke(ex);
+			}
             finally
             {
                 _graphics?.EndScene();
@@ -479,17 +478,18 @@ namespace SRTPluginUIRE4DirectXOverlay
             // Show Damaged Enemies Only
             if (config.EnemyLimit == -1)
             {
-                if (config.ShowDamagedEnemiesOnly && config.ShowHPBars)
-                    foreach (PlayerContext enemy in gameMemory.Enemies.Where(a => a.Health.IsAlive && a.Health.IsDamaged && !a.IsAnimal && !a.IsIgnored).OrderBy(a => a.Health.MaxHP).ThenBy(a => a.Health.Percentage).ThenByDescending(a => a.Health.CurrentHP))
-                        DrawEnemies(enemy, ref xOffset, ref yOffset);
+                var enemyList = gameMemory.Enemies
+                    .Where(a => GetEnemyFilters(a))
+                    .OrderBy(a => a.Health.MaxHP)
+                    .ThenBy(a => a.Health.Percentage)
+                    .ThenByDescending(a => a.Health.CurrentHP);
 
-                else if (!config.ShowDamagedEnemiesOnly && config.ShowHPBars)
-                    foreach (PlayerContext enemy in gameMemory.Enemies.Where(a => a.Health.IsAlive && !a.IsAnimal && !a.IsIgnored).OrderBy(a => a.Health.MaxHP).ThenBy(a => a.Health.Percentage).ThenByDescending(a => a.Health.CurrentHP))
+                if (config.ShowHPBars)
+                    foreach (PlayerContext enemy in enemyList)
                         DrawEnemies(enemy, ref xOffset, ref yOffset);
             }
             else
             {
-                
                 var enemyListLimited = gameMemory.Enemies
                     .Where(a => GetEnemyFilters(a))
                     .OrderBy(a => a.Health.MaxHP)
@@ -497,11 +497,10 @@ namespace SRTPluginUIRE4DirectXOverlay
                     .ThenByDescending(a => a.Health.CurrentHP)
                     .Take(config.EnemyLimit);
 
-                foreach (PlayerContext enemy in enemyListLimited)
-                    DrawEnemies(enemy, ref xOffset, ref yOffset);
+                if (config.ShowHPBars)
+                    foreach (PlayerContext enemy in enemyListLimited)
+                        DrawEnemies(enemy, ref xOffset, ref yOffset);
             }
-            
-
         }
 
         private bool GetEnemyFilters(PlayerContext enemy)
