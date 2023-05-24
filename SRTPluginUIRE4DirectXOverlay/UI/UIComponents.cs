@@ -3,6 +3,9 @@ using SRTPluginProducerRE4R.Structs;
 using GameOverlay.Drawing;
 using GameOverlay.Windows;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.Globalization;
+using System;
 
 namespace SRTPluginUIRE4DirectXOverlay.UI
 {
@@ -67,6 +70,15 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			LuisHPColors[1] = _white;
 		}
 
+		private SolidBrush[] GetColor(string name)
+		{
+			if (name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_"))
+				return new SolidBrush[2] { PlayerHPColors[0], PlayerHPColors[1] };
+			if (name.Contains("Luis"))
+				return new SolidBrush[2] { LuisHPColors[0], LuisHPColors[1] };
+			return new SolidBrush[2] { AshleyHPColors[0], AshleyHPColors[1] };
+		}
+
 		private void SetColors(PlayerState healthState, SolidBrush[] c)
 		{
 			if (healthState == PlayerState.Fine) // Fine
@@ -95,21 +107,11 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			}
 		}
 
-		private float GetStringSize(Graphics _graphics, string str)
-		{
-			return (float)_graphics?.MeasureString(_currentFont, _currentFont.FontSize, str).X;
-		}
+		private float GetStringSize(Graphics _graphics, string str) => (float)_graphics?.MeasureString(_currentFont, _currentFont.FontSize, str).X;
 
-		private float GetStringSize(Graphics _graphics, string str, float size = 20f)
-		{
-			return (float)_graphics?.MeasureString(_currentFont, size, str).X;
-		}
+		private float GetStringSize(Graphics _graphics, string str, float size = 20f) => (float)_graphics?.MeasureString(_currentFont, size, str).X;
 
-		// TEXT BOX METHODS
-		public float AlignRight(Graphics _graphics, string s, float x, float width)
-		{
-			return (x + width) - GetStringSize(_graphics, s);
-		}
+		public float AlignRight(Graphics _graphics, string s, float x, float width) => (x + width) - GetStringSize(_graphics, s);
 
 		public void DrawTextBlock(Graphics _graphics, ref float dx, ref float dy, string label, string val, SolidBrush color)
 		{
@@ -128,7 +130,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 		}
 
 		// PLAYER AND PARTNER HP METHODS
-		public void DrawPlayerHP(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, PlayerContext pc, string PlayerName, ref float xOffset, ref float yOffset)
+		public void DrawPlayerHP(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, PlayerContext pc, string _playerName, ref float xOffset, ref float yOffset)
 		{
 			SetColors(pc.HealthState, PlayerHPColors);
 			if (config.ShowHPBars)
@@ -137,38 +139,47 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 				{
 					if (config.CenterPlayerHP)
 					{
-						DrawPlayerBar(_graphics, _window, config, PlayerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
+						DrawPlayerBar(_graphics, _window, config, _playerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
 						return;
 					}
-					DrawHealthBar(_graphics, config, ref xOffset, ref yOffset, PlayerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
+					DrawHealthBar(_graphics, config, ref xOffset, ref yOffset, _playerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
 				}
 			}
 		}
 
-		private SolidBrush[] GetColor(string name)
+		public void DrawPartnerHP(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, PlayerContext pc, string _playerName, ref float xOffset, ref float yOffset)
 		{
-			if (name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_"))
-				return new SolidBrush[2] { PlayerHPColors[0], PlayerHPColors[1] };
-			if (name.Contains("Luis"))
-				return new SolidBrush[2] { LuisHPColors[0], LuisHPColors[0] };
-			return new SolidBrush[2] { AshleyHPColors[1], AshleyHPColors[1] };
+			SolidBrush[] colors = _playerName.Contains("Ashley") ? AshleyHPColors : LuisHPColors;
+			SetColors(pc.HealthState, colors);
+			if (config.ShowHPBars)
+			{
+				if (pc.IsLoaded)
+				{
+					if (config.CenterPlayerHP && _playerName.Contains("Ashley"))
+					{
+						DrawPartnerBar(_graphics, _window, config, _playerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
+						return;
+					}
+					DrawHealthBar(_graphics, config, ref xOffset, ref yOffset, _playerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
+				}
+			}
 		}
 
-		public void DrawHealthBar(Graphics _graphics, PluginConfiguration config, ref float xOffset, ref float yOffset, string name, float chealth, float mhealth, float percentage = 1f)
+		private void DrawHealthBar(Graphics _graphics, PluginConfiguration config, ref float xOffset, ref float yOffset, string name, float chealth, float mhealth, float percentage = 1f)
 		{
 			float widthBar = 250f;
 			float heightBar = config.FontSize + 8f;
 			var colors = GetColor(name);
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
 			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, perc, config.FontSize);
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.DrawRectangle(_greydark, xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(colors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
 			_graphics.DrawText(_currentFont, config.FontSize, colors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
 			_graphics.DrawText(_currentFont, config.FontSize, colors[1], endOfBar, yOffset, perc);
 		}
 
-		public void DrawPlayerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
+		private void DrawPlayerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
 		{
 			float widthBar = 250f;
 			float heightBar = config.FontSize + 8f;
@@ -177,28 +188,27 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			// var yOffset = ((_window.Height / 2f) - (heightBar / 2f)) * config.ScalingFactor;
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
 			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, perc, config.FontSize) - 8f;
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.DrawRectangle(_greydark, xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(PlayerHPColors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
 			_graphics.DrawText(_currentFont, config.FontSize, PlayerHPColors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
 			_graphics.DrawText(_currentFont, config.FontSize, PlayerHPColors[1], endOfBar, yOffset, perc);
 		}
 
-		public void DrawPartnerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
+		private void DrawPartnerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
 		{
 			float widthBar = 250f;
 			float heightBar = config.FontSize + 8f;
 			var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * config.ScalingFactor;
 			var yOffset = (_window.Height - 70f) * config.ScalingFactor;
-			var bar = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? HPBarColor : name.Contains("_") || name.Contains("Luis") ? HPBarColor2[0] : HPBarColor2[1];
-			var txt = name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_") ? TextColor : name.Contains("_") || name.Contains("Luis") ? TextColor2[0] : TextColor2[1];
+			var colors = GetColor(name);
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
 			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, perc, config.FontSize) - 8f;
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.DrawRectangle(_greydark, xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
-			_graphics.FillRectangle(bar, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(_currentFont, config.FontSize, txt, xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(_currentFont, config.FontSize, txt, endOfBar, yOffset, perc);
+			_graphics.FillRectangle(colors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
+			_graphics.DrawText(_currentFont, config.FontSize, colors[1], xOffset + 8f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+			_graphics.DrawText(_currentFont, config.FontSize, colors[1], endOfBar, yOffset, perc);
 		}
 
 		// ENEMY HP METHODS
@@ -250,6 +260,24 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			else
 				DrawProgressBar(graphics, config, ref xOffset, ref yOffset, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
 		}
+
+		private long TimestampCalculated(long timestamp) => unchecked(timestamp);
+
+		private long CalculatedTicks(long timestamp) => unchecked(TimestampCalculated(timestamp) * 10L);
+
+		private TimeSpan TicksToTimeSpan(long ticks)
+		{
+			TimeSpan timespan;
+			if (ticks <= TimeSpan.MaxValue.Ticks)
+				timespan = new TimeSpan(ticks);
+			else
+				timespan = new TimeSpan();
+			return timespan;
+		}
+
+		private const string TIMESPAN_STRING_FORMAT = @"hh\:mm\:ss";
+
+		public string FormattedString(long timestamp) => TicksToTimeSpan(CalculatedTicks(timestamp)).ToString(TIMESPAN_STRING_FORMAT, CultureInfo.InvariantCulture);
 
 		public void Dispose()
 		{

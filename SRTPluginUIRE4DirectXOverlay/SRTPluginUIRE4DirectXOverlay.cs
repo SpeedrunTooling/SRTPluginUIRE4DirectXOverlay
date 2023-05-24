@@ -164,131 +164,108 @@ namespace SRTPluginUIRE4DirectXOverlay
             float textOffsetX = 0f;
             textOffsetX = Config.PositionX + 15f;
 			ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "IGT:", gameMemory.Timer.IGTFormattedString, ui._lawngreen);
+			
 			PlayerName = string.Format("{0}: ", gameMemory.PlayerContext.SurvivorTypeString);
+			PartnerName = string.Format("{0}: ", gameMemory.PartnerContext[0]?.SurvivorTypeString);
+			PartnerName2 = string.Format("{0}: ", gameMemory.PartnerContext[1]?.SurvivorTypeString);
 			ui.DrawPlayerHP(_graphics, _window, Config, gameMemory.PlayerContext, PlayerName, ref statsXOffset, ref statsYOffset);
-			//DrawTextBlock(ref textOffsetX, ref statsYOffset, "IGT:", gameMemory.Timer.IGTFormattedString, _lawngreen);
+			if (gameMemory.PartnerContext[0] != null && gameMemory.PartnerContext[0].IsLoaded)
+				ui.DrawPartnerHP(_graphics, _window, Config, gameMemory.PartnerContext[0], PartnerName, ref statsXOffset, ref statsYOffset);
+			if (gameMemory.PartnerContext[1] != null && gameMemory.PartnerContext[1].IsLoaded)
+				ui.DrawPartnerHP(_graphics, _window, Config, gameMemory.PartnerContext[1], PartnerName2, ref statsXOffset, ref statsYOffset);
 
-			//PlayerName = string.Format("{0}: ", gameMemory.PlayerContext.SurvivorTypeString);
-			//PartnerName = string.Format("{0}: ", gameMemory.PartnerContext[0]?.SurvivorTypeString);
-			//PartnerName2 = string.Format("{0}: ", gameMemory.PartnerContext[1]?.SurvivorTypeString);
-			//SetColors();
-			//SetColors2(0);
-			//SetColors2(1);
+			if (!Config.CenterPlayerHP)
+				statsYOffset += 6f;
 
-			//if (Config.ShowHPBars)
-			//{
-			//    if (gameMemory.PlayerContext.IsLoaded)
-			//        if (Config.CenterPlayerHP)
-			//            DrawPlayerBar(PlayerName, gameMemory.PlayerContext.Health.CurrentHP, gameMemory.PlayerContext.Health.MaxHP, gameMemory.PlayerContext.Health.Percentage);
-			//        else
-			//            DrawHealthBar(ref statsXOffset, ref statsYOffset, PlayerName, gameMemory.PlayerContext.Health.CurrentHP, gameMemory.PlayerContext.Health.MaxHP, gameMemory.PlayerContext.Health.Percentage);
-			//    if (gameMemory.PartnerContext[0] != null && gameMemory.PartnerContext[0].IsLoaded)
-			//        if (Config.CenterPlayerHP)
-			//            DrawPartnerBar(PartnerName, gameMemory.PartnerContext[0].Health.CurrentHP, gameMemory.PartnerContext[0].Health.MaxHP, gameMemory.PartnerContext[0].Health.Percentage);
-			//        else
-			//            DrawHealthBar(ref statsXOffset, ref statsYOffset, PartnerName, gameMemory.PartnerContext[0].Health.CurrentHP, gameMemory.PartnerContext[0].Health.MaxHP, gameMemory.PartnerContext[0].Health.Percentage);
-			//    if (gameMemory.PartnerContext[1] != null && gameMemory.PartnerContext[1].IsLoaded)
-			//        if (!Config.CenterPlayerHP)
-			//            DrawHealthBar(ref statsXOffset, ref statsYOffset, PartnerName2, gameMemory.PartnerContext[1].Health.CurrentHP, gameMemory.PartnerContext[1].Health.MaxHP, gameMemory.PartnerContext[1].Health.Percentage);
-			//}
+			if (Config.Debug)
+			{
+				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Active:", ui.FormattedString(gameMemory.Timer.GameSaveData.GameElapsedTime), ui._lawngreen);
+				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Cutscene:", ui.FormattedString(gameMemory.Timer.GameSaveData.DemoSpendingTime), ui._lawngreen);
+				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Inventory:", ui.FormattedString(gameMemory.Timer.GameSaveData.InventorySpendingTime), ui._lawngreen);
+				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Pause:", ui.FormattedString(gameMemory.Timer.GameSaveData.PauseSpendingTime), ui._lawngreen);
+			}
 
-			//textOffsetX = 0f;
-			//if (Config.Debug)
-			//{
-			//    _graphics?.DrawText(_currentFont, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, "Raw IGT");
-			//    _graphics?.DrawText(_currentFont, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("A:{0}", gameMemory.Timer.GameSaveData.GameElapsedTime.ToString("00000000000000000000")));
-			//    _graphics?.DrawText(_currentFont, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("C:{0}", gameMemory.Timer.GameSaveData.DemoSpendingTime.ToString("00000000000000000000")));
-			//    _graphics?.DrawText(_currentFont, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("M:{0}", gameMemory.Timer.GameSaveData.InventorySpendingTime.ToString("00000000000000000000")));
-			//    _graphics?.DrawText(_currentFont, Config.FontSize, _grey, statsXOffset, statsYOffset += 24, string.Format("P:{0}", gameMemory.Timer.GameSaveData.PauseSpendingTime.ToString("00000000000000000000")));
-			//}
+			if (Config.ShowPTAS)
+			{
+			    textOffsetX = Config.PositionX + 15f;
+			    statsYOffset += 24f;
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "PTAS:", gameMemory.PTAS.ToString(), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "Spinel:", gameMemory.Spinel.ToString(), ui._lawngreen);
+			}
 
-			//if (Config.ShowPTAS)
-			//{
-			//    textOffsetX = Config.PositionX + 15f;
-			//    statsYOffset += 24f;
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "PTAS:", gameMemory.PTAS.ToString(), _lawngreen);
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "Spinel:", gameMemory.Spinel.ToString(), _lawngreen);
-			//}
+			if (Config.ShowPosition)
+			{
+			    textOffsetX = Config.PositionX + 15f;
+			    statsYOffset += 24f;
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "X:", gameMemory.PlayerContext.Position.X.ToString("F3"), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "Y:", gameMemory.PlayerContext.Position.Y.ToString("F3"), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "Z:", gameMemory.PlayerContext.Position.Z.ToString("F3"), ui._lawngreen);
+			}
 
-			//if (Config.ShowPosition)
-			//{
-			//    textOffsetX = Config.PositionX + 15f;
-			//    statsYOffset += 24f;
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "X:", gameMemory.PlayerContext.Position.X.ToString("F3"), _lawngreen);
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "Y:", gameMemory.PlayerContext.Position.Y.ToString("F3"), _lawngreen);
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "Z:", gameMemory.PlayerContext.Position.Z.ToString("F3"), _lawngreen);
-			//}
+			if (Config.ShowRotation)
+			{
+			    textOffsetX = Config.PositionX + 15f;
+			    statsYOffset += 24;
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "RW:", gameMemory.PlayerContext.Rotation.W.ToString("F3"), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "RY:", gameMemory.PlayerContext.Rotation.Y.ToString("F3"), ui._lawngreen);
+			}
 
-			//if (Config.ShowRotation)
-			//{
-			//    textOffsetX = Config.PositionX + 15f;
-			//    statsYOffset += 24;
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "RW:", gameMemory.PlayerContext.Rotation.W.ToString("F3"), _lawngreen);
-			//    DrawTextBlockRow(ref textOffsetX, ref statsYOffset, "RY:", gameMemory.PlayerContext.Rotation.Y.ToString("F3"), _lawngreen);
-			//}
+			if (Config.ShowDifficultyAdjustment)
+			{
+			    textOffsetX = Config.PositionX + 15f;
+			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Rank:", gameMemory.Rank.Rank.ToString(), ui._lawngreen);
+			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Action Point:", gameMemory.Rank.ActionPoint.ToString(), ui._lawngreen);
+			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Item Point:", gameMemory.Rank.ItemPoint.ToString(), ui._lawngreen);
+				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Kill Count:", gameMemory.GameStatsKillCountElement.Count.ToString(), ui._lawngreen);
+			}
 
-			//if (Config.ShowDifficultyAdjustment)
-			//{
-			//    textOffsetX = Config.PositionX + 15f;
-			//    DrawTextBlock(ref textOffsetX, ref statsYOffset, "Rank:", gameMemory.Rank.Rank.ToString(), _lawngreen);
-			//    textOffsetX = Config.PositionX + 15f;
-			//    DrawTextBlock(ref textOffsetX, ref statsYOffset, "Action Point:", gameMemory.Rank.ActionPoint.ToString(), _lawngreen);
-			//    textOffsetX = Config.PositionX + 15f;
-			//    DrawTextBlock(ref textOffsetX, ref statsYOffset, "Item Point:", gameMemory.Rank.ItemPoint.ToString(), _lawngreen);
-			//}
+			if (!gameMemory.PlayerContext.IsLoaded)
+			    duffel = null;
 
-			//textOffsetX = Config.PositionX + 15f;
-			//DrawTextBlock(ref textOffsetX, ref statsYOffset, "Kill Count:", gameMemory.GameStatsKillCountElement.Count.ToString(), _lawngreen);
-
-			//if (gameMemory.PlayerContext == null)
-			//    duffel = null;
-
-			//if (gameMemory.CurrentChapter == "Chapter15")
-			//{
-			//    if (gameMemory.PlayerContext.Position.Y < 0f && gameMemory.PlayerContext.Position.Y >= -0.5f)
-			//        duffel = null;
-			//    else if (gameMemory.PlayerContext.Position.Y < -0.5f && gameMemory.PlayerContext.Position.Y > -1)
-			//        duffel = gameMemory.PlayerContext.Position.Y;
-
-			//    if (Config.ShowDuffle)
-			//        DrawTextBlock(ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? _lawngreen : _red);
-			//}
+			if (Config.ShowDuffle && gameMemory.CurrentChapter == "Chapter15")
+			{
+			    if (gameMemory.PlayerContext.Position.Y < 0f && gameMemory.PlayerContext.Position.Y >= -0.5f)
+			        duffel = null;
+			    else if (gameMemory.PlayerContext.Position.Y < -0.5f && gameMemory.PlayerContext.Position.Y > -1)
+			        duffel = gameMemory.PlayerContext.Position.Y;
+			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? ui._lawngreen : ui._red);
+			}
 
 			//// Enemy HP
-			//var xOffset = Config.EnemyHPPositionX == -1 ? statsXOffset : Config.EnemyHPPositionX;
-			//var yOffset = Config.EnemyHPPositionY == -1 ? statsYOffset : Config.EnemyHPPositionY;
-			//if (PlayerName.Contains("Ashley"))
-			//{
-			//    DrawTextBlock(ref textOffsetX, ref statsYOffset, "Enemy Count:", gameMemory.Enemies.Where(a => a.Health.IsAlive).ToArray().Count().ToString(), _lawngreen);
-			//    return;
-			//}
+			var xOffset = Config.EnemyHPPositionX == -1 ? statsXOffset : Config.EnemyHPPositionX;
+			var yOffset = Config.EnemyHPPositionY == -1 ? statsYOffset : Config.EnemyHPPositionY;
+			if (PlayerName.Contains("Ashley"))
+			{
+			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Enemy Count:", gameMemory.Enemies.Where(a => a.Health.IsAlive).ToArray().Count().ToString(), ui._lawngreen);
+			    return;
+			}
 
-			//// Show Damaged Enemies Only
-			//if (Config.EnemyLimit == -1)
-			//{
-			//    var enemyList = gameMemory.Enemies
-			//        .Where(a => GetEnemyFilters(a))
-			//        .OrderBy(a => a.Health.MaxHP)
-			//        .ThenBy(a => a.Health.Percentage)
-			//        .ThenByDescending(a => a.Health.CurrentHP);
+			// Show Damaged Enemies Only
+			if (Config.EnemyLimit == -1)
+			{
+			    var enemyList = gameMemory.Enemies
+			        .Where(a => GetEnemyFilters(a))
+			        .OrderBy(a => a.Health.MaxHP)
+			        .ThenBy(a => a.Health.Percentage)
+			        .ThenByDescending(a => a.Health.CurrentHP);
 
-			//    if (Config.ShowHPBars)
-			//        foreach (PlayerContext enemy in enemyList)
-			//            DrawEnemies(enemy, ref xOffset, ref yOffset);
-			//}
-			//else
-			//{
-			//    var enemyListLimited = gameMemory.Enemies
-			//        .Where(a => GetEnemyFilters(a))
-			//        .OrderBy(a => a.Health.MaxHP)
-			//        .ThenBy(a => a.Health.Percentage)
-			//        .ThenByDescending(a => a.Health.CurrentHP)
-			//        .Take(Config.EnemyLimit);
+			    if (Config.ShowHPBars)
+			        foreach (PlayerContext enemy in enemyList)
+			            ui.DrawEnemies(_graphics, _window, Config, enemy, ref xOffset, ref yOffset);
+			}
+			else
+			{
+			    var enemyListLimited = gameMemory.Enemies
+			        .Where(a => GetEnemyFilters(a))
+			        .OrderBy(a => a.Health.MaxHP)
+			        .ThenBy(a => a.Health.Percentage)
+			        .ThenByDescending(a => a.Health.CurrentHP)
+			        .Take(Config.EnemyLimit);
 
-			//    if (Config.ShowHPBars)
-			//        foreach (PlayerContext enemy in enemyListLimited)
-			//            DrawEnemies(enemy, ref xOffset, ref yOffset);
-			//}
+			    if (Config.ShowHPBars)
+			        foreach (PlayerContext enemy in enemyListLimited)
+			            ui.DrawEnemies(_graphics, _window, Config, enemy, ref xOffset, ref yOffset);
+			}
 		}
 
         private bool GetEnemyFilters(PlayerContext enemy)
