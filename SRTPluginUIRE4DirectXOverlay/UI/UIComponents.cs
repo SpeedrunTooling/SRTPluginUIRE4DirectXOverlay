@@ -2,73 +2,102 @@
 using SRTPluginProducerRE4R.Structs;
 using GameOverlay.Drawing;
 using GameOverlay.Windows;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using System.Globalization;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Threading.Tasks;
+using SRTPluginProducerRE4R.Pages.Shared;
 
 namespace SRTPluginUIRE4DirectXOverlay.UI
 {
 	public class UIComponents
 	{
-		public Font _currentFont;
+		public Dictionary<string, SolidBrush> brushes;
+        public Dictionary<string, Font> fonts;
 
-		public SolidBrush _white;
-		public SolidBrush _grey;
-		public SolidBrush _darkred;
-		public SolidBrush _red;
-		public SolidBrush _lightred;
-		public SolidBrush _lightyellow;
-		public SolidBrush _lightgreen;
-		public SolidBrush _lawngreen;
-		public SolidBrush _greydark;
-		public SolidBrush _greydarker;
-		public SolidBrush _darkgreen;
-		public SolidBrush _darkyellow;
-
-		public SolidBrush HPBarColor;
-		public SolidBrush TextColor;
-		public SolidBrush[] HPBarColor2;
-		public SolidBrush[] TextColor2;
-
-		public SolidBrush[] PlayerHPColors;
-		public SolidBrush[] AshleyHPColors;
-		public SolidBrush[] LuisHPColors;
+		private SolidBrush[] PlayerHPColors;
+		private SolidBrush[] AshleyHPColors;
+		private SolidBrush[] LuisHPColors;
 
 		public UIComponents(Graphics _graphics, PluginConfiguration config)
 		{
-			HPBarColor2 = new SolidBrush[2];
-			TextColor2 = new SolidBrush[2];
+            brushes = new Dictionary<string, SolidBrush>()
+			{
+				{ "white", _graphics?.CreateSolidBrush(255, 255, 255) },
+				{ "lightgrey", _graphics?.CreateSolidBrush(128, 128, 128) },
+				{ "grey", _graphics?.CreateSolidBrush(64, 64, 64) },
+				{ "darkgrey", _graphics?.CreateSolidBrush(24, 24, 24) },
+				{ "lightgreen", _graphics?.CreateSolidBrush(150, 255, 150) },
+				{ "green", _graphics?.CreateSolidBrush(124, 252, 0) },
+				{ "darkgreen", _graphics?.CreateSolidBrush(0, 102, 0, 100) },
+				{ "lightyellow", _graphics?.CreateSolidBrush(255, 255, 150) },
+				{ "darkyellow", _graphics?.CreateSolidBrush(218, 165, 32, 100) },
+				{ "lightred", _graphics?.CreateSolidBrush(255, 172, 172) },
+				{ "red", _graphics?.CreateSolidBrush(255, 0, 0) },
+				{ "darkred", _graphics?.CreateSolidBrush(153, 0, 0, 100) },
+			};
+
+            fonts = new Dictionary<string, Font>();
+			var fetchedFonts = new List<string>()
+			{
+				"Arial",
+				"Arial Black",
+				"Bahnschrift",
+				"Calibri",
+				"Cambria",
+				"Candara",
+				"Comic Sans MS",
+				"Consolas",
+				"Constantia",
+				"Corbel",
+				"Courier New",
+				"Georgia",
+				"Impact",
+				"Lucida Console",
+				"Lucida Sans Unicode",
+				"Malgun Gothic",
+				"Microsoft Sans Serif",
+				"Palatino Linotype",
+				"Segoe MDL2 Assets",
+				"Segoe Print",
+				"Segoe Script",
+				"Segoe UI",
+				"Segoe UI Black",
+				"Segoe UI Emoji",
+				"Segoe UI Historic",
+				"Segoe UI Light",
+				"Segoe UI Semibold",
+				"Segoe UI Semilight",
+				"Segoe UI Symbol",
+				"SimSun",
+				"SimSun-ExtB",
+				"Tahoma",
+				"Times New Roman",
+				"Trebuchet MS",
+				"Verdana",
+				"Webdings",
+				"Wingdings"
+            };
+			if (fetchedFonts.Count > 0)
+				foreach (string font in fetchedFonts)
+				{
+					fonts.Add(font, _graphics?.CreateFont(font, 16f, false));
+					fonts.Add(font + " Bold", _graphics?.CreateFont(font, 16f, true));
+				}
 
 			PlayerHPColors = new SolidBrush[2];
 			AshleyHPColors = new SolidBrush[2];
 			LuisHPColors = new SolidBrush[2];
 
-			_currentFont = _graphics?.CreateFont(config.StringFontName, config.FontSize, true);
+			PlayerHPColors[0] = brushes["darkgrey"];
+			PlayerHPColors[1] = brushes["lightgrey"];
 
-			_white = _graphics?.CreateSolidBrush(255, 255, 255);
-			_grey = _graphics?.CreateSolidBrush(128, 128, 128);
-			_greydark = _graphics?.CreateSolidBrush(64, 64, 64);
-			_greydarker = _graphics?.CreateSolidBrush(24, 24, 24);
-			_darkred = _graphics?.CreateSolidBrush(153, 0, 0, 100);
-			_darkgreen = _graphics?.CreateSolidBrush(0, 102, 0, 100);
-			_darkyellow = _graphics?.CreateSolidBrush(218, 165, 32, 100);
-			_red = _graphics?.CreateSolidBrush(255, 0, 0);
-			_lightred = _graphics?.CreateSolidBrush(255, 172, 172);
-			_lightyellow = _graphics?.CreateSolidBrush(255, 255, 150);
-			_lightgreen = _graphics?.CreateSolidBrush(150, 255, 150);
-			_lawngreen = _graphics?.CreateSolidBrush(124, 252, 0);
+            AshleyHPColors[0] = brushes["darkgrey"];
+            AshleyHPColors[1] = brushes["lightgrey"];
 
-
-			PlayerHPColors[0] = _grey;
-			PlayerHPColors[1] = _white;
-
-			AshleyHPColors[0] = _grey;
-			AshleyHPColors[1] = _white;
-
-			LuisHPColors[0] = _grey;
-			LuisHPColors[1] = _white;
-		}
+            LuisHPColors[0] = brushes["darkgrey"];
+            LuisHPColors[1] = brushes["lightgrey"];
+        }
 
 		private SolidBrush[] GetColor(string name)
 		{
@@ -83,50 +112,48 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 		{
 			if (healthState == PlayerState.Fine) // Fine
 			{
-				c[0] = _darkgreen;
-				c[1] = _lightgreen;
+				c[0] = brushes["darkgreen"];
+				c[1] = brushes["lightgreen"];
 				return;
 			}
 			else if (healthState == PlayerState.Caution) // Caution (Yellow)
 			{
-				c[0] = _darkyellow;
-				c[1] = _lightyellow;
+				c[0] = brushes["darkyellow"];
+				c[1] = brushes["lightyellow"];
 				return;
 			}
 			else if (healthState == PlayerState.Danger) // Danger (Red)
 			{
-				c[0] = _darkred;
-				c[1] = _lightred;
+				c[0] = brushes["darkred"];
+				c[1] = brushes["lightred"];
 				return;
 			}
 			else
 			{
-				c[0] = _greydarker;
-				c[1] = _white;
+				c[0] = brushes["darkgrey"];
+				c[1] = brushes["lightgrey"];
 				return;
 			}
 		}
 
-		private float GetStringSize(Graphics _graphics, string str) => (float)_graphics?.MeasureString(_currentFont, _currentFont.FontSize, str).X;
+		private float GetStringSize(Graphics _graphics, Font fontType, string str, float size = 16f) => (float)_graphics?.MeasureString(fontType, size, str).X;
 
-		private float GetStringSize(Graphics _graphics, string str, float size = 20f) => (float)_graphics?.MeasureString(_currentFont, size, str).X;
+		private float AlignRight(Graphics _graphics, Font fontType, string textString, float startPosition, float width) => (startPosition + width) - GetStringSize(_graphics, fontType, textString);
 
-		public float AlignRight(Graphics _graphics, string s, float x, float width) => (x + width) - GetStringSize(_graphics, s);
-
-		public void DrawTextBlock(Graphics _graphics, ref float dx, ref float dy, string label, string val, SolidBrush color)
+		public void DrawTextBlock(Graphics _graphics, PluginConfiguration config, ref float dx, ref float dy, string label, string val, SolidBrush color)
 		{
-			_graphics?.DrawText(_currentFont, _currentFont.FontSize, _white, dx, dy += 24f, label);
-			var dx2 = dx + GetStringSize(_graphics, label) + 8f;
-			_graphics?.DrawText(_currentFont, _currentFont.FontSize, color, dx2, dy, val);
+			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, brushes["white"], dx, dy += 24f, label);
+			var dx2 = dx + GetStringSize(_graphics, fonts[config.StringFontName], label) + 8f;
+			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, color, dx2, dy, val);
 		}
 
-		public void DrawTextBlockRow(Graphics _graphics, ref float dx, ref float dy, string label, string val, SolidBrush color)
+		public void DrawTextBlockRow(Graphics _graphics, PluginConfiguration config, ref float dx, ref float dy, string label, string val, SolidBrush color)
 		{
 			float marginX = 40f;
-			_graphics?.DrawText(_currentFont, _currentFont.FontSize, _white, dx, dy, label);
-			var dx2 = dx + GetStringSize(_graphics, label) + 8f;
-			_graphics?.DrawText(_currentFont, _currentFont.FontSize, color, dx2, dy, val);
-			dx += GetStringSize(_graphics, label) + GetStringSize(_graphics, val) + marginX;
+			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, brushes["white"], dx, dy, label);
+			var dx2 = dx + GetStringSize(_graphics, fonts[config.StringFontName], label) + 8f;
+			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, color, dx2, dy, val);
+			dx += GetStringSize(_graphics, fonts[config.StringFontName], label) + GetStringSize(_graphics, fonts[config.StringFontName], val) + marginX;
 		}
 
 		// PLAYER AND PARTNER HP METHODS
@@ -171,12 +198,12 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			float heightBar = config.FontSize + 8f;
 			var colors = GetColor(name);
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, perc, config.FontSize);
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
-			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
+			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(colors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(_currentFont, config.FontSize, colors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(_currentFont, config.FontSize, colors[1], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], endOfBar, yOffset, perc);
 		}
 
 		private void DrawPlayerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
@@ -187,12 +214,12 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			var yOffset = (_window.Height - 100f) * config.ScalingFactor;
 			// var yOffset = ((_window.Height / 2f) - (heightBar / 2f)) * config.ScalingFactor;
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, perc, config.FontSize) - 8f;
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
-			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
+			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize) - 8f;
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(PlayerHPColors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(_currentFont, config.FontSize, PlayerHPColors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(_currentFont, config.FontSize, PlayerHPColors[1], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, PlayerHPColors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, PlayerHPColors[1], endOfBar, yOffset, perc);
 		}
 
 		private void DrawPartnerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
@@ -203,12 +230,12 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			var yOffset = (_window.Height - 70f) * config.ScalingFactor;
 			var colors = GetColor(name);
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, perc, config.FontSize) - 8f;
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
-			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
+			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize) - 8f;
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(colors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(_currentFont, config.FontSize, colors[1], xOffset + 8f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(_currentFont, config.FontSize, colors[1], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], xOffset + 8f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], endOfBar, yOffset, perc);
 		}
 
 		// ENEMY HP METHODS
@@ -218,12 +245,12 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			if (name == "Dog") return;
 			if (config.ShowDamagedEnemiesOnly && percentage == 1f) return;
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, perc, config.FontSize);
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
-			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + 20f);
-			_graphics.FillRectangle(_darkred, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
-			_graphics.DrawText(_currentFont, config.FontSize, _lightred, xOffset + 10f, yOffset, string.Format("{0} / {1}", chealth, mhealth));
-			_graphics.DrawText(_currentFont, config.FontSize, _lightred, endOfBar, yOffset, perc);
+			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
+			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + 20f);
+			_graphics.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, brushes["lightred"], xOffset + 10f, yOffset, string.Format("{0} / {1}", chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, brushes["lightred"], endOfBar, yOffset, perc);
 		}
 
 		private void DrawBossBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
@@ -236,12 +263,12 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			if (name == "Dog") return;
 			if (config.ShowDamagedEnemiesOnly && percentage == 1f) return;
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, perc, fSize) - 8f;
-			_graphics.DrawRectangle(_greydark, xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
-			_graphics.FillRectangle(_greydarker, xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
-			_graphics.FillRectangle(_darkred, xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + heightBar - 2f);
-			_graphics.DrawText(_currentFont, fSize, _lightred, xOffset + 10f, yOffset, string.Format("{0} {1} / {2}", name.Replace("_", " ").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(_currentFont, fSize, _lightred, endOfBar, yOffset, perc);
+			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, fSize) - 8f;
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
+			_graphics.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + heightBar - 2f);
+			_graphics.DrawText(fonts[config.StringFontName], fSize, brushes["lightred"], xOffset + 10f, yOffset, string.Format("{0} {1} / {2}", name.Replace("_", " ").ToUpper(), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName], fSize, brushes["lightred"], endOfBar, yOffset, perc);
 		}
 
 		public void DrawEnemies(Graphics graphics, OverlayWindow window, PluginConfiguration config, PlayerContext enemy, ref float xOffset, ref float yOffset)
@@ -281,26 +308,9 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 
 		public void Dispose()
 		{
-			_white?.Dispose();
-			_grey?.Dispose();
-			_darkred?.Dispose();
-			_red?.Dispose();
-			_lightred?.Dispose();
-			_lightyellow?.Dispose();
-			_lightgreen?.Dispose();
-			_lawngreen?.Dispose();
-			_greydark?.Dispose();
-			_greydarker?.Dispose();
-			_darkgreen?.Dispose();
-			_darkyellow?.Dispose();
-			HPBarColor?.Dispose();
-			TextColor?.Dispose();
-			HPBarColor2[0]?.Dispose();
-			HPBarColor2[1]?.Dispose();
-			TextColor2[0]?.Dispose();
-			TextColor2[1]?.Dispose();
-			_currentFont?.Dispose();
-			return;
+            foreach (var pair in brushes) pair.Value.Dispose();
+            foreach (var pair in fonts) pair.Value.Dispose();
+            return;
 		}
 
 		public async ValueTask DisposeAsync()

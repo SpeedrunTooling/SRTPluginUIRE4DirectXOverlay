@@ -1,17 +1,16 @@
 ﻿using GameOverlay.Drawing;
 using GameOverlay.Windows;
 using SRTPluginBase;
+using SRTPluginProducerRE4R;
+using SRTPluginProducerRE4R.Structs;
+using SRTPluginUIRE4DirectXOverlay.UI;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using SRTPluginProducerRE4R;
-using SRTPluginProducerRE4R.Structs;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using System.Threading;
-using SRTPluginUIRE4DirectXOverlay.UI;
-using SRTPluginProducerRE4R.Pages.Shared;
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 
 namespace SRTPluginUIRE4DirectXOverlay
 {
@@ -163,7 +162,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             float textOffsetX = 0f;
             textOffsetX = Config.PositionX + 15f;
-			ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "IGT:", gameMemory.Timer.IGTFormattedString, ui._lawngreen);
+			ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "IGT:", gameMemory.Timer.IGTFormattedString, ui.brushes["green"]);
 			
 			PlayerName = string.Format("{0}: ", gameMemory.PlayerContext.SurvivorTypeString);
 			PartnerName = string.Format("{0}: ", gameMemory.PartnerContext[0]?.SurvivorTypeString);
@@ -179,44 +178,44 @@ namespace SRTPluginUIRE4DirectXOverlay
 
 			if (Config.Debug)
 			{
-				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Active:", ui.FormattedString(gameMemory.Timer.GameSaveData.GameElapsedTime), ui._lawngreen);
-				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Cutscene:", ui.FormattedString(gameMemory.Timer.GameSaveData.DemoSpendingTime), ui._lawngreen);
-				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Inventory:", ui.FormattedString(gameMemory.Timer.GameSaveData.InventorySpendingTime), ui._lawngreen);
-				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Pause:", ui.FormattedString(gameMemory.Timer.GameSaveData.PauseSpendingTime), ui._lawngreen);
+				ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Active:", ui.FormattedString(gameMemory.Timer.GameSaveData.GameElapsedTime), ui.brushes["green"]);
+				ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Cutscene:", ui.FormattedString(gameMemory.Timer.GameSaveData.DemoSpendingTime), ui.brushes["green"]);
+				ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Inventory:", ui.FormattedString(gameMemory.Timer.GameSaveData.InventorySpendingTime), ui.brushes["green"]);
+				ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Pause:", ui.FormattedString(gameMemory.Timer.GameSaveData.PauseSpendingTime), ui.brushes["green"]);
 			}
 
 			if (Config.ShowPTAS)
 			{
 			    textOffsetX = Config.PositionX + 15f;
 			    statsYOffset += 24f;
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "PTAS:", gameMemory.PTAS.ToString(), ui._lawngreen);
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "Spinel:", gameMemory.Spinel.ToString(), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "PTAS:", gameMemory.PTAS.ToString(), ui.brushes["green"]);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "Spinel:", gameMemory.Spinel.ToString(), ui.brushes["green"]);
 			}
 
 			if (Config.ShowPosition)
 			{
 			    textOffsetX = Config.PositionX + 15f;
 			    statsYOffset += 24f;
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "X:", gameMemory.PlayerContext.Position.X.ToString("F3"), ui._lawngreen);
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "Y:", gameMemory.PlayerContext.Position.Y.ToString("F3"), ui._lawngreen);
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "Z:", gameMemory.PlayerContext.Position.Z.ToString("F3"), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "X:", gameMemory.PlayerContext.Position.X.ToString("F3"), ui.brushes["green"]);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "Y:", gameMemory.PlayerContext.Position.Y.ToString("F3"), ui.brushes["green"]);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "Z:", gameMemory.PlayerContext.Position.Z.ToString("F3"), ui.brushes["green"]);
 			}
 
 			if (Config.ShowRotation)
 			{
 			    textOffsetX = Config.PositionX + 15f;
 			    statsYOffset += 24;
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "RW:", gameMemory.PlayerContext.Rotation.W.ToString("F3"), ui._lawngreen);
-			    ui.DrawTextBlockRow(_graphics, ref textOffsetX, ref statsYOffset, "RY:", gameMemory.PlayerContext.Rotation.Y.ToString("F3"), ui._lawngreen);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "RW:", gameMemory.PlayerContext.Rotation.W.ToString("F3"), ui.brushes["green"]);
+			    ui.DrawTextBlockRow(_graphics, Config, ref textOffsetX, ref statsYOffset, "RY:", gameMemory.PlayerContext.Rotation.Y.ToString("F3"), ui.brushes["green"]);
 			}
 
 			if (Config.ShowDifficultyAdjustment)
 			{
 			    textOffsetX = Config.PositionX + 15f;
-			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Rank:", gameMemory.Rank.Rank.ToString(), ui._lawngreen);
-			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Action Point:", gameMemory.Rank.ActionPoint.ToString(), ui._lawngreen);
-			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Item Point:", gameMemory.Rank.ItemPoint.ToString(), ui._lawngreen);
-				ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Kill Count:", gameMemory.GameStatsKillCountElement.Count.ToString(), ui._lawngreen);
+			    ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Rank:", gameMemory.Rank.Rank.ToString(), ui.brushes["green"]);
+			    ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Action Point:", gameMemory.Rank.ActionPoint.ToString(), ui.brushes["green"]);
+			    ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Item Point:", gameMemory.Rank.ItemPoint.ToString(), ui.brushes["green"]);
+				ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Kill Count:", gameMemory.GameStatsKillCountElement.Count.ToString(), ui.brushes["green"]);
 			}
 
 			if (!gameMemory.PlayerContext.IsLoaded)
@@ -228,7 +227,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 			        duffel = null;
 			    else if (gameMemory.PlayerContext.Position.Y < -0.5f && gameMemory.PlayerContext.Position.Y > -1)
 			        duffel = gameMemory.PlayerContext.Position.Y;
-			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? ui._lawngreen : ui._red);
+			    ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? ui.brushes["green"] : ui.brushes["red"]);
 			}
 
 			//// Enemy HP
@@ -236,7 +235,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 			var yOffset = Config.EnemyHPPositionY == -1 ? statsYOffset : Config.EnemyHPPositionY;
 			if (PlayerName.Contains("Ashley"))
 			{
-			    ui.DrawTextBlock(_graphics, ref textOffsetX, ref statsYOffset, "Enemy Count:", gameMemory.Enemies.Where(a => a.Health.IsAlive).ToArray().Count().ToString(), ui._lawngreen);
+			    ui.DrawTextBlock(_graphics, Config, ref textOffsetX, ref statsYOffset, "Enemy Count:", gameMemory.Enemies.Where(a => a.Health.IsAlive).ToArray().Count().ToString(), ui.brushes["green"]);
 			    return;
 			}
 
@@ -245,7 +244,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 			{
 			    var enemyList = gameMemory.Enemies
 			        .Where(a => GetEnemyFilters(a))
-			        .OrderBy(a => a.Health.MaxHP)
+			        .OrderByDescending(a => a.Health.MaxHP)
 			        .ThenBy(a => a.Health.Percentage)
 			        .ThenByDescending(a => a.Health.CurrentHP);
 
@@ -257,7 +256,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 			{
 			    var enemyListLimited = gameMemory.Enemies
 			        .Where(a => GetEnemyFilters(a))
-			        .OrderBy(a => a.Health.MaxHP)
+			        .OrderByDescending(a => a.Health.MaxHP)
 			        .ThenBy(a => a.Health.Percentage)
 			        .ThenByDescending(a => a.Health.CurrentHP)
 			        .Take(Config.EnemyLimit);

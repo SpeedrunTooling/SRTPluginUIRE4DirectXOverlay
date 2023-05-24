@@ -7,11 +7,11 @@ namespace SRTPluginUIRE4DirectXOverlay
     {
         public string Name => "DirectX Overlay UI (Resident Evil 4 Remake (2023))";
 
-        public string Description => "A DirectX-based Overlay User Interface for displaying Resident Evil 4 Remake (2023) game memory values.";
+        public string Description => "A DirectX-based Overlay User Interface for displaying Resident Evil 4 Remake (2023) UI. (SRT Host 4.0)";
 
-        public string Author => "VideoGameRoulette";
+        public string Author => "VideoGameRoulette & Squirrelies";
 
-        public Uri MoreInfoURL => new Uri("https://github.com/VideoGameRoulette/SRTPluginUIRE4DirectXOverlay");
+        public Uri MoreInfoURL => new Uri("https://github.com/SpeedrunTooling/SRTPluginUIRE4DirectXOverlay");
 
 		public int VersionMajor => assemblyVersion?.Major ?? 0;
 
