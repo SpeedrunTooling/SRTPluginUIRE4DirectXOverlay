@@ -25,24 +25,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="NativeWindowHelper.cs" />
-    <Compile Remove="UIComponents.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Resources\Background.png" />
-    <None Remove="Resources\Kudos.png" />
-    <None Remove="Resources\LIberty.png" />
-    <None Remove="Resources\Money.png" />
-    <None Remove="Resources\Morality.png" />
-    <None Remove="Resources\Utility.png" />
-  </ItemGroup>
-
 	<ItemGroup>
-		<PackageReference Include="GameOverlay.Net" Version="4.3.1" />
-		<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 		<PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
+		<PackageReference Include="GameOverlay.Net" Version="4.3.1" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -50,10 +35,6 @@
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Resources\" />
 	</ItemGroup>
 
 	<Choose>
