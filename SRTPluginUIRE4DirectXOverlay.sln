@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRTPluginUIRE4DirectXOverlay", "SRTPluginUIExampleDXOverlay\SRTPluginUIRE4DirectXOverlay.csproj", "{EE688214-F225-4A46-9ABF-463F9A1DD458}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRTPluginUIRE4DirectXOverlay", "SRTPluginUIRE4DirectXOverlay\SRTPluginUIRE4DirectXOverlay.csproj", "{EE688214-F225-4A46-9ABF-463F9A1DD458}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRTPluginProducerRE4R", "..\SRTPluginProviderRE4R\SRTPluginProviderRE4R\SRTPluginProducerRE4R.csproj", "{180CCAD8-2610-496A-B676-EAFDFDA89A7F}"
 EndProject
