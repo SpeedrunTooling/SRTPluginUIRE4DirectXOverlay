@@ -116,7 +116,8 @@ namespace SRTPluginUIRE4DirectXOverlay
 		public override async ValueTask DisposeAsync()
 		{
             Dispose();
-			await Task.CompletedTask;
+            GC.SuppressFinalize(this);
+            await Task.CompletedTask;
 		}
 		
         public void ReceiveData()
