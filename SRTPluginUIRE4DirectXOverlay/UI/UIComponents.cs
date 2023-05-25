@@ -192,7 +192,6 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 		// PLAYER AND PARTNER HP METHODS
 		public void DrawPlayerHP(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, PlayerContext pc, string _playerName, ref float xOffset, ref float yOffset)
 		{
-			// Debugger.Break();
 			SetColors(pc.HealthState, PlayerHPColors);
 			if (config.ShowHPBars)
 			{
