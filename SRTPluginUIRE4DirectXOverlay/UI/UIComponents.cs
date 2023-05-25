@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
-using SRTPluginProducerRE4R.Pages.Shared;
+using System.Drawing.Text;
 
 namespace SRTPluginUIRE4DirectXOverlay.UI
 {
@@ -19,10 +19,14 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 		private SolidBrush[] AshleyHPColors;
 		private SolidBrush[] LuisHPColors;
 
+		private float GetHPBarSize(PluginConfiguration config) => config.FontSize * 20;
+		private float GetHPBarSize2(PluginConfiguration config) => config.FontSize * 12;
+		private float GetBossBarSize(float s) => s * 32;
 		public UIComponents(Graphics _graphics, PluginConfiguration config)
 		{
             brushes = new Dictionary<string, SolidBrush>()
 			{
+				{ "black", _graphics?.CreateSolidBrush(0, 0, 0, 200) },
 				{ "white", _graphics?.CreateSolidBrush(255, 255, 255) },
 				{ "lightgrey", _graphics?.CreateSolidBrush(128, 128, 128) },
 				{ "grey", _graphics?.CreateSolidBrush(64, 64, 64) },
@@ -38,46 +42,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			};
 
             fonts = new Dictionary<string, Font>();
-			var fetchedFonts = new List<string>()
-			{
-				"Arial",
-				"Arial Black",
-				"Bahnschrift",
-				"Calibri",
-				"Cambria",
-				"Candara",
-				"Comic Sans MS",
-				"Consolas",
-				"Constantia",
-				"Corbel",
-				"Courier New",
-				"Georgia",
-				"Impact",
-				"Lucida Console",
-				"Lucida Sans Unicode",
-				"Malgun Gothic",
-				"Microsoft Sans Serif",
-				"Palatino Linotype",
-				"Segoe MDL2 Assets",
-				"Segoe Print",
-				"Segoe Script",
-				"Segoe UI",
-				"Segoe UI Black",
-				"Segoe UI Emoji",
-				"Segoe UI Historic",
-				"Segoe UI Light",
-				"Segoe UI Semibold",
-				"Segoe UI Semilight",
-				"Segoe UI Symbol",
-				"SimSun",
-				"SimSun-ExtB",
-				"Tahoma",
-				"Times New Roman",
-				"Trebuchet MS",
-				"Verdana",
-				"Webdings",
-				"Wingdings"
-            };
+			var fetchedFonts = GetAvailableFonts();
 			if (fetchedFonts.Count > 0)
 				foreach (string font in fetchedFonts)
 				{
@@ -99,11 +64,24 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
             LuisHPColors[1] = brushes["lightgrey"];
         }
 
+		public List<string> GetAvailableFonts()
+		{
+			var results = new List<string>();
+			var fontCollection = new InstalledFontCollection();
+
+			foreach (var fontFamily in fontCollection.Families)
+			{
+				results.Add(fontFamily.Name);
+			}
+
+			return results;
+		}
+
 		private SolidBrush[] GetColor(string name)
 		{
-			if (name.Contains("Leon") || name.Contains("Ashley") && !name.Contains("_"))
+			if (name.Contains("LEON") || name.Contains("ASHLEY") && !name.Contains("_"))
 				return new SolidBrush[2] { PlayerHPColors[0], PlayerHPColors[1] };
-			if (name.Contains("Luis"))
+			if (name.Contains("LUIS"))
 				return new SolidBrush[2] { LuisHPColors[0], LuisHPColors[1] };
 			return new SolidBrush[2] { AshleyHPColors[0], AshleyHPColors[1] };
 		}
@@ -136,29 +114,85 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			}
 		}
 
-		private float GetStringSize(Graphics _graphics, Font fontType, string str, float size = 16f) => (float)_graphics?.MeasureString(fontType, size, str).X;
+		public Point GetStringSize(Graphics _graphics, Font fontType, string str, float size = 16f)
+		{
+			Point sizePoint = (Point)_graphics?.MeasureString(fontType, size, str);
+			return new Point(sizePoint.X, sizePoint.Y);
+		}
 
-		private float AlignRight(Graphics _graphics, Font fontType, string textString, float startPosition, float width) => (startPosition + width) - GetStringSize(_graphics, fontType, textString);
+		private float AlignRight(Graphics _graphics, Font fontType, string textString, float startPosition, float width) => (startPosition + width) - GetStringSize(_graphics, fontType, textString).X;
 
 		public void DrawTextBlock(Graphics _graphics, PluginConfiguration config, ref float dx, ref float dy, string label, string val, SolidBrush color)
 		{
-			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, brushes["white"], dx, dy += 24f, label);
-			var dx2 = dx + GetStringSize(_graphics, fonts[config.StringFontName], label) + 8f;
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], label, config.FontSize);
+			_graphics?.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, brushes["white"], dx, dy += gfxSize.Y * 1.5f, label);
+			var dx2 = dx + gfxSize.X + config.FontSize;
 			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, color, dx2, dy, val);
 		}
 
 		public void DrawTextBlockRow(Graphics _graphics, PluginConfiguration config, ref float dx, ref float dy, string label, string val, SolidBrush color)
 		{
 			float marginX = 40f;
-			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, brushes["white"], dx, dy, label);
-			var dx2 = dx + GetStringSize(_graphics, fonts[config.StringFontName], label) + 8f;
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], label, config.FontSize);
+			Point gfxSize2 = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], val, config.FontSize);
+			_graphics?.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, brushes["white"], dx, dy, label);
+			var dx2 = dx + gfxSize.X + config.FontSize;
 			_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, color, dx2, dy, val);
-			dx += GetStringSize(_graphics, fonts[config.StringFontName], label) + GetStringSize(_graphics, fonts[config.StringFontName], val) + marginX;
+			dx += gfxSize.X + gfxSize2.X + marginX;
+		}
+
+		public void DrawTextBlockRows(Graphics _graphics, PluginConfiguration config, ref float dx, ref float dy, List<string> labels, List<string> vals, SolidBrush color)
+		{
+			float marginX = 40f;
+
+			List<bool> enabled = new List<bool>()
+			{
+				config.Debug,
+				config.ShowPTAS,
+				config.ShowPTAS,
+				config.ShowPosition,
+				config.ShowPosition,
+				config.ShowPosition,
+				config.ShowRotation,
+				config.ShowRotation,
+				config.ShowDifficultyAdjustment,
+				config.ShowDifficultyAdjustment,
+				config.ShowDifficultyAdjustment,
+				config.ShowDifficultyAdjustment,
+				config.ShowDuffle,
+			};
+			dx = 8f;
+			dy = 0;
+
+			float xLength = 0;
+			float yHeight = config.FontSize;
+			for (var i = 0; i < labels.Count; i++)
+			{
+				if (!enabled[i]) continue;
+				Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], labels[i], config.FontSize);
+				Point gfxSize2 = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], vals[i], config.FontSize);
+				xLength += gfxSize.X + (config.FontSize * 2.5f) + gfxSize2.X;
+				yHeight = gfxSize.Y + 2f;
+			}
+			_graphics.FillRectangle(brushes["black"], 0, 0, xLength, yHeight);
+
+			for (var i = 0; i < labels.Count; i++)
+			{
+				if (!enabled[i]) continue;
+				if (vals[i] == "Off") color = brushes["red"];
+				Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], labels[i], config.FontSize);
+				Point gfxSize2 = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], vals[i], config.FontSize);
+				_graphics?.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, brushes["white"], dx, dy, labels[i]);
+				var dx2 = dx + gfxSize.X + config.FontSize;
+				_graphics?.DrawText(fonts[config.StringFontName], config.FontSize, color, dx2, dy, vals[i]);
+				dx += gfxSize.X + gfxSize2.X + marginX;
+			}
 		}
 
 		// PLAYER AND PARTNER HP METHODS
 		public void DrawPlayerHP(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, PlayerContext pc, string _playerName, ref float xOffset, ref float yOffset)
 		{
+			// Debugger.Break();
 			SetColors(pc.HealthState, PlayerHPColors);
 			if (config.ShowHPBars)
 			{
@@ -176,13 +210,13 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 
 		public void DrawPartnerHP(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, PlayerContext pc, string _playerName, ref float xOffset, ref float yOffset)
 		{
-			SolidBrush[] colors = _playerName.Contains("Ashley") ? AshleyHPColors : LuisHPColors;
+			SolidBrush[] colors = _playerName.ToUpper().Contains("ASHLEY") ? AshleyHPColors : LuisHPColors;
 			SetColors(pc.HealthState, colors);
 			if (config.ShowHPBars)
 			{
 				if (pc.IsLoaded)
 				{
-					if (config.CenterPlayerHP && _playerName.Contains("Ashley"))
+					if (config.CenterPlayerHP && _playerName.Contains("ASHLEY"))
 					{
 						DrawPartnerBar(_graphics, _window, config, _playerName, pc.Health.CurrentHP, pc.Health.MaxHP, pc.Health.Percentage);
 						return;
@@ -194,81 +228,90 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 
 		private void DrawHealthBar(Graphics _graphics, PluginConfiguration config, ref float xOffset, ref float yOffset, string name, float chealth, float mhealth, float percentage = 1f)
 		{
-			float widthBar = 250f;
-			float heightBar = config.FontSize + 8f;
-			var colors = GetColor(name);
+			// Debugger.Break();
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
-			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
+			float widthBar = GetHPBarSize(config);
+			float heightBar = (gfxSize.Y / 4) + gfxSize.Y;
+			var colors = GetColor(name);
+			float endOfBar = config.PositionX + widthBar - gfxSize.X - 8f;
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(colors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, colors[1], xOffset + 10f, yOffset += 1, string.Format("{0}{1} / {2}", name.Replace("_", ""), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, colors[1], endOfBar, yOffset, perc);
 		}
 
 		private void DrawPlayerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
 		{
-			float widthBar = 250f;
+			float widthBar = GetHPBarSize(config);
 			float heightBar = config.FontSize + 8f;
 			var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * config.ScalingFactor;
-			var yOffset = (_window.Height - 100f) * config.ScalingFactor;
+			var yOffset = (_window.Height - (heightBar * 4f)) * config.ScalingFactor;
 			// var yOffset = ((_window.Height / 2f) - (heightBar / 2f)) * config.ScalingFactor;
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize) - 8f;
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
+			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - gfxSize.X - 8f;
 			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(PlayerHPColors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, PlayerHPColors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, PlayerHPColors[1], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, PlayerHPColors[1], xOffset + 10f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", ""), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, PlayerHPColors[1], endOfBar, yOffset, perc);
 		}
 
 		private void DrawPartnerBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
 		{
-			float widthBar = 250f;
+			float widthBar = GetHPBarSize(config);
 			float heightBar = config.FontSize + 8f;
 			var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * config.ScalingFactor;
-			var yOffset = (_window.Height - 70f) * config.ScalingFactor;
+			var yOffset = (_window.Height - (heightBar * 3f)) + 2f * config.ScalingFactor;
 			var colors = GetColor(name);
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize) - 8f;
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
+			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - gfxSize.X - 8f;
 			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar + 2, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + (widthBar - 2f), yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(colors[0], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], xOffset + 8f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", "").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, colors[1], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, colors[1], xOffset + 8f, yOffset, string.Format("{0}{1} / {2}", name.Replace("_", ""), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, colors[1], endOfBar, yOffset, perc);
 		}
 
 		// ENEMY HP METHODS
 		private void DrawProgressBar(Graphics _graphics, PluginConfiguration config, ref float xOffset, ref float yOffset, string name, float chealth, float mhealth, float percentage = 1f)
 		{
-			float widthBar = 200f;
 			if (name == "Dog") return;
 			if (config.ShowDamagedEnemiesOnly && percentage == 1f) return;
+
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = config.PositionX + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
-			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += 28f, xOffset + widthBar, yOffset + 22f, 4f);
-			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + 20f);
-			_graphics.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + 20f);
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, brushes["lightred"], xOffset + 10f, yOffset, string.Format("{0} / {1}", chealth, mhealth));
-			_graphics.DrawText(fonts[config.StringFontName], config.FontSize, brushes["lightred"], endOfBar, yOffset, perc);
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName], perc, config.FontSize);
+			float widthBar = GetHPBarSize2(config);
+			float heightBar = gfxSize.Y + 4f;
+			float endOfBar = config.PositionX + widthBar - gfxSize.X - 8f;
+
+			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += heightBar, xOffset + widthBar, yOffset + heightBar, 4f);
+			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
+			_graphics.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + (heightBar - 2f));
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, brushes["lightred"], xOffset + 10f, yOffset += 1, string.Format("{0} / {1}", chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], config.FontSize, brushes["lightred"], endOfBar, yOffset, perc);
 		}
 
 		private void DrawBossBar(Graphics _graphics, OverlayWindow _window, PluginConfiguration config, string name, float chealth, float mhealth, float percentage = 1f)
 		{
-			float widthBar = 552f;
-			float heightBar = 32f;
 			float fSize = 24f;
+			float widthBar = GetBossBarSize(fSize);
+			float heightBar = (fSize / 2f) + fSize;
 			var xOffset = ((_window.Width / 2f) - (widthBar / 2f)) * config.ScalingFactor;
 			var yOffset = 4f * config.ScalingFactor;
 			if (name == "Dog") return;
 			if (config.ShowDamagedEnemiesOnly && percentage == 1f) return;
 			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
-			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - GetStringSize(_graphics, fonts[config.StringFontName], perc, fSize) - 8f;
+			Point gfxSize = GetStringSize(_graphics, fonts[config.StringFontName + " Bold"], perc, fSize);
+			float endOfBar = (_window.Width / 2f) - (widthBar / 2f) + widthBar - gfxSize.X - 8f;
 			_graphics.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
 			_graphics.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + heightBar - 2f);
-			_graphics.DrawText(fonts[config.StringFontName], fSize, brushes["lightred"], xOffset + 10f, yOffset, string.Format("{0} {1} / {2}", name.Replace("_", " ").ToUpper(), chealth, mhealth));
-			_graphics.DrawText(fonts[config.StringFontName], fSize, brushes["lightred"], endOfBar, yOffset, perc);
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], fSize, brushes["lightred"], xOffset + 8f, yOffset, string.Format("{0} {1} / {2}", name.Replace("_", " "), chealth, mhealth));
+			_graphics.DrawText(fonts[config.StringFontName + " Bold"], fSize, brushes["lightred"], endOfBar, yOffset, perc);
 		}
 
 		public void DrawEnemies(Graphics graphics, OverlayWindow window, PluginConfiguration config, PlayerContext enemy, ref float xOffset, ref float yOffset)
@@ -278,14 +321,14 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 				if (!enemy.IsBoss) return;
 				if (enemy.IsBoss)
 				{
-					if (config.CenterBossHP) DrawBossBar(graphics, window, config, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
-					else DrawProgressBar(graphics, config, ref xOffset, ref yOffset, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
+					if (config.CenterBossHP) DrawBossBar(graphics, window, config, enemy.SurvivorTypeString.ToUpper(), enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
+					else DrawProgressBar(graphics, config, ref xOffset, ref yOffset, enemy.SurvivorTypeString.ToUpper(), enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
 				}
 			}
 			else if (config.CenterBossHP && enemy.IsBoss)
-				DrawBossBar(graphics, window, config, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
+				DrawBossBar(graphics, window, config, enemy.SurvivorTypeString.ToUpper(), enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
 			else
-				DrawProgressBar(graphics, config, ref xOffset, ref yOffset, enemy.SurvivorTypeString, enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
+				DrawProgressBar(graphics, config, ref xOffset, ref yOffset, enemy.SurvivorTypeString.ToUpper(), enemy.Health.CurrentHP, enemy.Health.MaxHP, enemy.Health.Percentage);
 		}
 
 		private long TimestampCalculated(long timestamp) => unchecked(timestamp);
