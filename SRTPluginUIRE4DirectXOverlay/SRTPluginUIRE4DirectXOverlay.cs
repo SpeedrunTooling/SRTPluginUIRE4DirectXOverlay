@@ -158,8 +158,12 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         private void DrawOverlay()
         {
-			if (gameMemory.Timer.MeasureDemoSpendingTime || gameMemory.Timer.MeasurePauseSpendingTime || gameMemory.Timer.MeasureInventorySpendingTime || gameMemory.IsInGameShopOpen) return;
-            float baseXOffset = Config.PositionX;
+			if (gameMemory.Timer.MeasureDemoSpendingTime && Config.HideUICutscene) return;
+			if (gameMemory.Timer.MeasurePauseSpendingTime && Config.HideUIPause) return;
+			if (gameMemory.Timer.MeasureInventorySpendingTime && Config.HideUIInventory) return;
+			if (gameMemory.IsInGameShopOpen && Config.HideUIInShop) return;
+
+			float baseXOffset = Config.PositionX;
             float baseYOffset = Config.PositionY;
 
             // Player HP
@@ -168,7 +172,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             float textOffsetX = 0f;
             textOffsetX = Config.PositionX + 15f;
-			if (Config.Debug)
+			if (Config.AlignInfoTop)
 			{
 				List<string> labels = new List<string>()
 				{
@@ -206,32 +210,33 @@ namespace SRTPluginUIRE4DirectXOverlay
 				ui.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels, vals, ui.brushes["green"]);
 			}
 
-			if (!Config.Debug)
+			if (!Config.AlignInfoTop && Config.ShowIGT)
 				ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "IGT:", gameMemory.Timer.IGTFormattedString, ui.brushes["green"]);
 			
-			playerName = string.Format("{0}: ", gameMemory.PlayerContext.SurvivorTypeString).ToUpper();
-			partnerName = string.Format("{0}: ", gameMemory.PartnerContext[0]?.SurvivorTypeString).ToUpper();
-			partnerName2 = string.Format("{0}: ", gameMemory.PartnerContext[1]?.SurvivorTypeString).ToUpper();
-			ui.DrawPlayerHP(graphics, window, Config, gameMemory.PlayerContext, playerName, ref statsXOffset, ref statsYOffset);
-			if (gameMemory.PartnerContext[0] != null && gameMemory.PartnerContext[0].IsLoaded)
-				ui.DrawPartnerHP(graphics, window, Config, gameMemory.PartnerContext[0], partnerName, ref statsXOffset, ref statsYOffset);
-			if (gameMemory.PartnerContext[1] != null && gameMemory.PartnerContext[1].IsLoaded)
-				ui.DrawPartnerHP(graphics, window, Config, gameMemory.PartnerContext[1], partnerName2, ref statsXOffset, ref statsYOffset);
-
-			// if (!Config.CenterPlayerHP)
-			// 	statsYOffset += 6f;
+			if (Config.ShowHPBars)
+			{
+				playerName = string.Format("{0}: ", gameMemory.PlayerContext.SurvivorTypeString).ToUpper();
+				partnerName = string.Format("{0}: ", gameMemory.PartnerContext[0]?.SurvivorTypeString).ToUpper();
+				partnerName2 = string.Format("{0}: ", gameMemory.PartnerContext[1]?.SurvivorTypeString).ToUpper();
+				ui.DrawPlayerHP(graphics, window, Config, gameMemory.PlayerContext, playerName, ref statsXOffset, ref statsYOffset);
+				if (gameMemory.PartnerContext[0] != null && gameMemory.PartnerContext[0].IsLoaded)
+					ui.DrawPartnerHP(graphics, window, Config, gameMemory.PartnerContext[0], partnerName, ref statsXOffset, ref statsYOffset);
+				if (gameMemory.PartnerContext[1] != null && gameMemory.PartnerContext[1].IsLoaded)
+					ui.DrawPartnerHP(graphics, window, Config, gameMemory.PartnerContext[1], partnerName2, ref statsXOffset, ref statsYOffset);
+			}
 
 			float gfxHeight = ui.GetStringSize(graphics, ui.fonts[Config.StringFontName + " Bold"], "0", Config.FontSize).Y;
 
-			if (!Config.Debug)
+			if (!Config.AlignInfoTop)
 			{
-				// if (Config.Debug)
-				// {
-				// 	ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ACTIVE:", ui.FormattedString(gameMemory.Timer.GameSaveData.GameElapsedTime), ui.brushes["green"]);
-				// 	ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "CUTSCENE:", ui.FormattedString(gameMemory.Timer.GameSaveData.DemoSpendingTime), ui.brushes["green"]);
-				// 	ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "INVENTORY:", ui.FormattedString(gameMemory.Timer.GameSaveData.InventorySpendingTime), ui.brushes["green"]);
-				// 	ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "PAUSE:", ui.FormattedString(gameMemory.Timer.GameSaveData.PauseSpendingTime), ui.brushes["green"]);
-				// }
+				if (Config.Debug)
+				{
+					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ACTIVE:", ui.FormattedString(gameMemory.Timer.GameSaveData.GameElapsedTime), ui.brushes["green"]);
+					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "CUTSCENE:", ui.FormattedString(gameMemory.Timer.GameSaveData.DemoSpendingTime), ui.brushes["green"]);
+					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "INVENTORY:", ui.FormattedString(gameMemory.Timer.GameSaveData.InventorySpendingTime), ui.brushes["green"]);
+					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "PAUSE:", ui.FormattedString(gameMemory.Timer.GameSaveData.PauseSpendingTime), ui.brushes["green"]);
+					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "TIMER OFFSET:", ui.FormattedString(gameMemory.Timer.TimerOffset), ui.brushes["green"]);
+				}
 
 				if (Config.ShowPTAS)
 				{
@@ -267,16 +272,19 @@ namespace SRTPluginUIRE4DirectXOverlay
 					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "KILL COUNT:", gameMemory.GameStatsKillCountElement.Count.ToString(), ui.brushes["green"]);
 				}
 
-				if (!gameMemory.PlayerContext.IsLoaded)
-					duffel = null;
-
-				if (Config.ShowDuffle && gameMemory.CurrentChapter == "Chapter15")
+				if (Config.ShowDuffle)
 				{
-					if (gameMemory.PlayerContext.Position.Y < 0f && gameMemory.PlayerContext.Position.Y >= -0.5f)
+					if (!gameMemory.PlayerContext.IsLoaded)
 						duffel = null;
-					else if (gameMemory.PlayerContext.Position.Y < -0.5f && gameMemory.PlayerContext.Position.Y > -1)
-						duffel = gameMemory.PlayerContext.Position.Y;
-					ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? ui.brushes["green"] : ui.brushes["red"]);
+
+					if (gameMemory.CurrentChapter == "Chapter15")
+					{
+						if (gameMemory.PlayerContext.Position.Y < 0f && gameMemory.PlayerContext.Position.Y >= -0.5f)
+							duffel = null;
+						else if (gameMemory.PlayerContext.Position.Y < -0.5f && gameMemory.PlayerContext.Position.Y > -1)
+							duffel = gameMemory.PlayerContext.Position.Y;
+						ui.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "Duffle:", duffel != null ? String.Format("On {0}", duffel?.ToString("F3")) : "Off", duffel != null ? ui.brushes["green"] : ui.brushes["red"]);
+					}
 				}
 			}
 

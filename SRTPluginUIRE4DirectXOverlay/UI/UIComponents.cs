@@ -147,7 +147,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 
 			List<bool> enabled = new List<bool>()
 			{
-				config.Debug,
+				config.ShowIGT,
 				config.ShowPTAS,
 				config.ShowPTAS,
 				config.ShowPosition,
