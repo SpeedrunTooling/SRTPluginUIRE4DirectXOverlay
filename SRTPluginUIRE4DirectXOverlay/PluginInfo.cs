@@ -3,7 +3,7 @@ using System;
 
 namespace SRTPluginUIRE4DirectXOverlay
 {
-    internal class PluginInfo : PluginInfoBase, IPluginInfo
+	public class PluginInfo : PluginInfoBase, IPluginInfo
     {
         public override string Name => "DirectX Overlay UI (Resident Evil 4 Remake (2023))";
 
@@ -22,7 +22,7 @@ namespace SRTPluginUIRE4DirectXOverlay
         public override int VersionRevision => Version.Revision;
 
 #pragma warning disable IDE1006 // Naming Styles
-		internal static PluginInfo Default = new PluginInfo();
+		public static PluginInfo Default = new PluginInfo();
 #pragma warning restore IDE1006 // Naming Styles
 	}
 }
