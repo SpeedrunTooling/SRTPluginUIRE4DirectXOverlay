@@ -19,7 +19,7 @@ namespace SRTPluginUIRE4DirectXOverlay
     {
 		private const int DRAW_LOOP_INTERVAL = 16;
 
-		public override IPluginInfo Info => PluginInfo.Default;
+		public override IPluginInfo Info => new PluginInfo();
 
 		private readonly ILogger<SRTPluginUIRE4DirectXOverlay> logger;
 		private IPluginHost pluginHost;

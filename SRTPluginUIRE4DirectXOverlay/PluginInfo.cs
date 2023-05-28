@@ -20,9 +20,5 @@ namespace SRTPluginUIRE4DirectXOverlay
         public override int VersionBuild => Version.Build;
 
         public override int VersionRevision => Version.Revision;
-
-#pragma warning disable IDE1006 // Naming Styles
-		public static PluginInfo Default = new PluginInfo();
-#pragma warning restore IDE1006 // Naming Styles
 	}
 }
