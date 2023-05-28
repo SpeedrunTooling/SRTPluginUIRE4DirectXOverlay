@@ -127,7 +127,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             GC.SuppressFinalize(this);
             await Task.CompletedTask;
 		}
-		
+
         public void ReceiveData()
         {
 			while (!(renderThreadCTS?.Token.IsCancellationRequested ?? false))
@@ -142,11 +142,9 @@ namespace SRTPluginUIRE4DirectXOverlay
 				{
 					graphics?.BeginScene();
 					graphics?.ClearScene();
-					if (device is not null && Config?.ScalingFactor != 1f)
+					if (device is not null)
 						device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(Config?.ScalingFactor ?? 1f, 0f, 0f, Config?.ScalingFactor ?? 1f, 0f, 0f);
 					DrawOverlay();
-					//if (device is not null && Config?.ScalingFactor != 1f)
-					//	device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(1f, 0f, 0f, 1f, 0f, 0f);
 				}
 				catch (Exception ex)
 				{
