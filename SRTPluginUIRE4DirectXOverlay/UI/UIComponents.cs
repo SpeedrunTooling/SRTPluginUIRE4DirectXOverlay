@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Drawing.Text;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace SRTPluginUIRE4DirectXOverlay.UI
 {
@@ -186,9 +185,47 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 
 		private float getHPPercentPosition(float width, float x, float x2, float padding) => x + width - x2 - padding;
 
-        public void DrawHPBar(Graphics? _graphics, OverlayWindow? _window, PluginConfiguration? config, PlayerContext? pc, HPPosition hpPosition, ref float xOffset, ref float yOffset, float steps)
-        {
+		private Rectangle CreateHPContainer(OverlayWindow? _window, PluginConfiguration? config, HPPosition hpPosition, ref float xOffset, ref float yOffset, float widthBar, float heightBar, float steps)
+		{
+			var x = 0f;
+			var y = 0f;
+
+			if (steps == 0f)
+			{
+				x = config?.EnemyHPPositionX ?? default;
+                y = config?.EnemyHPPositionY ?? default;
+            }
+            else
+            {
+                x = config?.PlayerHPPositionX ?? default;
+                y = config?.PlayerHPPositionY ?? default;
+            }
+
+            if (hpPosition == HPPosition.Left)
+                return new Rectangle(xOffset, yOffset += heightBar, xOffset + widthBar, yOffset + heightBar);
+            else if (hpPosition == HPPosition.Center)
+                return new Rectangle((((_window?.Width ?? default) - widthBar) / 2f), ((_window?.Height ?? default) - (heightBar * steps)), (((_window?.Width ?? default) - widthBar) / 2f) + widthBar, ((_window?.Height ?? default) - (heightBar * steps) + heightBar));
+			else if (hpPosition == HPPosition.Right)
+                return new Rectangle((_window?.Width ?? default) - widthBar - (config?.PositionX ?? default), yOffset += heightBar, (_window?.Width ?? default) - (config?.PositionX ?? default), yOffset + heightBar);
+			else
+                return new Rectangle(x, y += heightBar, x + widthBar, y + heightBar);
+        }
+        
+		public void DrawHPBar(Graphics? _graphics, OverlayWindow? _window, PluginConfiguration? config, PlayerContext? pc, HPPosition hpPosition, ref float xOffset, ref float yOffset, float steps)
+		{
+			// If show hp disabled cancel draw action
 			if (!config?.ShowHPBars ?? default) return;
+            // If show damaged enemies only and enemy undamaged cancel draw action
+            if ((config?.ShowDamagedEnemiesOnly ?? default) && steps == 0f && (pc?.Health?.Percentage ?? 0f) == 1f) return;
+			// If show boss only checked and is not boss cacel draw action
+            if ((config?.ShowBossOnly ?? default) && (!pc?.IsBoss ?? default)) return;
+            // If is boss and center boss hp is checked then reroute draw method to DrawBossBar
+            if ((pc?.IsBoss ?? default) && (config?.CenterBossHP ?? default))
+			{
+				DrawBossBar(_graphics, _window, config, pc);
+				return;
+			}
+			// Else continue drawing player and enemy health HUD
             string percentString = string.Format("{0:P1}", pc?.Health?.Percentage ?? 0f);
             Point gfxSize = GetStringSize(_graphics, fonts[config?.StringFontName ?? string.Empty], percentString, config?.FontSize ?? Constants.DEFAULT_FONT_SIZE);
 
@@ -196,17 +233,12 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
             float heightBar = (gfxSize.Y / 4) + gfxSize.Y;
 			Rectangle rect;
 
-			if (hpPosition == HPPosition.Left)
-				rect = new Rectangle(xOffset, yOffset += heightBar, xOffset + widthBar, yOffset + heightBar);
-            else if (hpPosition == HPPosition.Center)
-                rect = new Rectangle((((_window?.Width ?? default) - widthBar) / 2f), ((_window?.Height ?? default) - (heightBar * steps)), (((_window?.Width ?? default) - widthBar) / 2f) + widthBar, ((_window?.Height ?? default) - (heightBar * steps) + heightBar));
-            else if (hpPosition == HPPosition.Right)
-                rect = new Rectangle((_window?.Width ?? default) - widthBar - (config?.PositionX ?? default), yOffset += heightBar, (_window?.Width ?? default) - (config?.PositionX ?? default), yOffset + heightBar);
-            else
-                rect = new Rectangle();
+			// Set rect to match position alignment
+			rect = CreateHPContainer(_window, config, hpPosition, ref xOffset, ref yOffset, widthBar, heightBar, steps);
 
-			float endOfBar = getHPPercentPosition(widthBar, rect.Left, gfxSize.X, 8f);
+            float endOfBar = getHPPercentPosition(widthBar, rect.Left, gfxSize.X, 8f);
 
+			// Draws HP as progress bar with text info
             if (((HPType)(config?.PlayerHPType ?? default)) == HPType.Bar)
 			{
 				var colors = GetColors(steps != 0f ? pc?.HealthState ?? PlayerState.Dead : PlayerState.Danger);
@@ -216,6 +248,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 				_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], config?.FontSize ?? Constants.DEFAULT_FONT_SIZE, colors[1], rect.Left + 8f, rect.Top + 1, string.Format("{0} {1} / {2}", pc?.SurvivorTypeString.Replace("_", "") ?? string.Empty, pc?.Health?.CurrentHP, pc?.Health?.MaxHP));
 				_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], config?.FontSize ?? Constants.DEFAULT_FONT_SIZE, colors[1], endOfBar, rect.Top + 1, percentString);
 			}
+			// Draws HP as text info only
 			else
 			{
                 var color = GetColor(steps != 0f ? pc?.HealthState ?? PlayerState.Dead : PlayerState.Danger);
@@ -225,22 +258,23 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
             }
         }
 
-		private void DrawBossBar(Graphics? _graphics, OverlayWindow? window, PluginConfiguration? config, string name, float chealth, float mhealth, float percentage = 1f)
+		private void DrawBossBar(Graphics? _graphics, OverlayWindow? window, PluginConfiguration? config, PlayerContext? pc)
 		{
-			float fSize = 24f;
+			string name = pc?.SurvivorTypeString.Replace("_", " ").ToUpperInvariant() ?? string.Empty;
+            float fSize = 24f;
 			float widthBar = GetBossBarSize(fSize);
 			float heightBar = (fSize / 2f) + fSize;
 			var xOffset = (((window?.Width ?? default) / 2f) - (widthBar / 2f)) * (config?.ScalingFactor ?? default);
 			var yOffset = 4f * (config?.ScalingFactor ?? default);
-			if (name == "Dog") return;
-			if ((config?.ShowDamagedEnemiesOnly ?? default) && percentage == 1f) return;
-			string perc = float.IsNaN(percentage) ? "0%" : string.Format("{0:P1}", percentage);
+			if (pc?.SurvivorTypeString.Contains("dog", StringComparison.InvariantCultureIgnoreCase) ?? default) return;
+			if ((config?.ShowDamagedEnemiesOnly ?? default) && pc?.Health?.Percentage == 1f) return;
+			string perc = float.IsNaN(pc?.Health?.Percentage ?? 0f) ? "0%" : string.Format("{0:P1}", pc?.Health?.Percentage);
 			Point gfxSize = GetStringSize(_graphics, fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], perc, fSize);
 			float endOfBar = ((window?.Width ?? default) / 2f) - (widthBar / 2f) + widthBar - gfxSize.X - 8f;
 			_graphics?.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics?.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
-			_graphics?.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * percentage), yOffset + heightBar - 2f);
-			_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], fSize, brushes["lightred"], xOffset + 8f, yOffset, string.Format("{0} {1} / {2}", name.Replace("_", " "), chealth, mhealth));
+			_graphics?.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * pc?.Health?.Percentage ?? 0f), yOffset + heightBar - 2f);
+			_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], fSize, brushes["lightred"], xOffset + 8f, yOffset, string.Format("{0} {1} / {2}", name, chealth, mhealth));
 			_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], fSize, brushes["lightred"], endOfBar, yOffset, perc);
 		}
 
