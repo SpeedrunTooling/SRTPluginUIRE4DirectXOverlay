@@ -287,7 +287,6 @@ namespace SRTPluginUIRE4DirectXOverlay
                 ui?.DrawHP(graphics, window, Config, gameMemory?.PartnerContext?[1], type, alignment, ref xOffsetPlayer, ref yOffsetPlayer, 2f);
 
             //// Enemy HP
-			Debugger.Break();
             var xOffset = (Config?.EnemyHPPositionX == -1 ? statsXOffset : Config?.EnemyHPPositionX) ?? default;
 			var yOffset = 0f;
             if (Config?.EnemyHPPositionY == -1 && alignment != HPPosition.Right)
