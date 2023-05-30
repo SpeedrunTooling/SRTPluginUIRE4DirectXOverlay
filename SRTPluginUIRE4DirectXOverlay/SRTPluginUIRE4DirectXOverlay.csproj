@@ -6,11 +6,11 @@
     <LangVersion>latest</LangVersion>
     <Platforms>x64</Platforms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <Authors>VideoGameRoulette</Authors>
-    <Product>Triangle Strategy (2022) DirectX Overlay User Interface Plugin</Product>
-    <Description>A user-interface plugin to display the values provided by the Triangle Strategy Provider Plugin in a DirectX overlay.</Description>
-    <Version>2.0.0.0</Version>
-    <FileVersion>2.0.0.0</FileVersion>
+    <Authors>VideoGameRoulette, Squirrelies</Authors>
+    <Product>Resident Evil 4 Remake (2023) DirectX Overlay User Interface Plugin</Product>
+    <Description>A user-interface plugin to display the values provided by the Resident Evil 4 Remake (2023) Provider Plugin in a DirectX overlay.</Description>
+    <Version>2.0.0.2</Version>
+    <FileVersion>2.0.0.2</FileVersion>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
 	<DebugType>embedded</DebugType>
 	<Nullable>enable</Nullable>
