@@ -274,7 +274,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			_graphics?.DrawRectangle(brushes["lightgrey"], xOffset, yOffset += 28f, xOffset + widthBar, yOffset + heightBar, 4f);
 			_graphics?.FillRectangle(brushes["darkgrey"], xOffset + 1f, yOffset + 1f, xOffset + widthBar - 2f, yOffset + (heightBar - 2f));
 			_graphics?.FillRectangle(brushes["darkred"], xOffset + 1f, yOffset + 1f, xOffset + ((widthBar - 2f) * pc?.Health?.Percentage ?? 0f), yOffset + heightBar - 2f);
-			_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], fSize, brushes["lightred"], xOffset + 8f, yOffset, string.Format("{0} {1} / {2}", name, chealth, mhealth));
+			_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], fSize, brushes["lightred"], xOffset + 8f, yOffset, string.Format("{0} {1} / {2}", name, pc?.Health?.CurrentHP, pc?.Health?.MaxHP));
 			_graphics?.DrawText(fonts[config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], fSize, brushes["lightred"], endOfBar, yOffset, perc);
 		}
 
