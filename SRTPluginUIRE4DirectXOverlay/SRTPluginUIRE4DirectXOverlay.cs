@@ -298,18 +298,7 @@ namespace SRTPluginUIRE4DirectXOverlay
                 yOffset = statsYOffset;
 
 			yOffset += 8f;
-			if ((Config?.CenterBossHP ?? default))
-			{
-                PlayerContext? currentBoss = (gameMemory?.Enemies ?? new PlayerContext[0])
-                    .Where(a => (a?.Health?.IsAlive ?? default) && (a?.IsBoss ?? default))
-                    .OrderByDescending(a => a?.Health?.MaxHP ?? default)
-                    .ThenBy(a => a?.Health?.Percentage)
-                    .ThenByDescending(a => a?.Health?.CurrentHP)!.FirstOrDefault() ?? default;
-
-                if (Config?.ShowHPBars ?? default)
-                        ui?.DrawHP(graphics, window, Config, currentBoss, type, HPPosition.Left, ref xOffsetPlayer, ref yOffset, 0f);
-            }
-			else if ((Config?.EnemyLimit ?? -1) == -1)
+			if ((Config?.EnemyLimit ?? -1) == -1)
 			{
 			    var enemyList = (gameMemory?.Enemies ?? new PlayerContext[0])
 			        .Where(a => GetEnemyFilters(a))
@@ -318,8 +307,11 @@ namespace SRTPluginUIRE4DirectXOverlay
 			        .ThenByDescending(a => a?.Health?.CurrentHP);
 
 			    if (Config?.ShowHPBars ?? default)
-			        foreach (PlayerContext? enemy in enemyList)
-                        ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffset, 0f);
+					if ((Config?.ShowBossOnly ?? default) && (Config?.CenterBossHP ?? default))
+                        ui?.DrawHP(graphics, window, Config, enemyList.FirstOrDefault(), type, HPPosition.Custom, ref xOffsetPlayer, ref yOffset, 0f);
+					else
+						foreach (PlayerContext? enemy in enemyList)
+							ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffset, 0f);
             }
 			else
 			{
@@ -331,14 +323,19 @@ namespace SRTPluginUIRE4DirectXOverlay
 			        .Take(Config?.EnemyLimit ?? default);
 
 			    if (Config?.ShowHPBars ?? default)
-			        foreach (PlayerContext? enemy in enemyListLimited)
+                    if ((Config?.ShowBossOnly ?? default) && (Config?.CenterBossHP ?? default))
+                        ui?.DrawHP(graphics, window, Config, enemyListLimited.FirstOrDefault(), type, HPPosition.Custom, ref xOffsetPlayer, ref yOffset, 0f);
+                    else
+                        foreach (PlayerContext? enemy in enemyListLimited)
                         ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffsetPlayer, 0f);
             }
 		}
 
         private bool GetEnemyFilters(PlayerContext? enemy)
         {
-            if (Config?.ShowDamagedEnemiesOnly ?? default)
+            if (Config?.ShowBossOnly ?? default)
+                return (enemy?.Health?.IsAlive ?? default) && (enemy?.IsBoss ?? default);
+            else if (Config?.ShowDamagedEnemiesOnly ?? default)
                 return (enemy?.Health?.IsAlive ?? default) && !(enemy?.IsAnimal ?? default) && !(enemy?.IsIgnored ?? default) && (enemy?.Health?.IsDamaged ?? default);
             return (enemy?.Health?.IsAlive ?? default) && !(enemy?.IsAnimal ?? default) && !(enemy?.IsIgnored ?? default);
         }
