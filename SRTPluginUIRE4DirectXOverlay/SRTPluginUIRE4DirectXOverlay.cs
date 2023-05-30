@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+
 namespace SRTPluginUIRE4DirectXOverlay
 {
 	public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>, IPluginConsumer
@@ -297,8 +298,18 @@ namespace SRTPluginUIRE4DirectXOverlay
                 yOffset = statsYOffset;
 
 			yOffset += 8f;
-			// Show Damaged Enemies Only
-			if ((Config?.EnemyLimit ?? -1) == -1)
+			if ((Config?.CenterBossHP ?? default))
+			{
+                PlayerContext? currentBoss = (gameMemory?.Enemies ?? new PlayerContext[0])
+                    .Where(a => (a?.Health?.IsAlive ?? default) && (a?.IsBoss ?? default))
+                    .OrderByDescending(a => a?.Health?.MaxHP ?? default)
+                    .ThenBy(a => a?.Health?.Percentage)
+                    .ThenByDescending(a => a?.Health?.CurrentHP)!.FirstOrDefault() ?? default;
+
+                if (Config?.ShowHPBars ?? default)
+                        ui?.DrawHP(graphics, window, Config, currentBoss, type, HPPosition.Left, ref xOffsetPlayer, ref yOffset, 0f);
+            }
+			else if ((Config?.EnemyLimit ?? -1) == -1)
 			{
 			    var enemyList = (gameMemory?.Enemies ?? new PlayerContext[0])
 			        .Where(a => GetEnemyFilters(a))
