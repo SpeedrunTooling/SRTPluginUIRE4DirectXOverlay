@@ -123,28 +123,11 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			dx += gfxSize.X + gfxSize2.X + marginX;
 		}
 
-		public void DrawTextBlockRows(Graphics? _graphics, PluginConfiguration? config, ref float dx, ref float dy, List<string> labels, List<string> vals, SolidBrush? color)
+		public void DrawTextBlockRows(Graphics? _graphics, PluginConfiguration? config, ref float dx, ref float dy, List<string> labels, List<string> vals, SolidBrush? color, List<bool> enabled)
 		{
 			float marginX = 40f;
 
-			List<bool> enabled = new List<bool>()
-			{
-				config?.ShowIGT ?? default,
-				config?.ShowPTAS ?? default,
-				config?.ShowPTAS ?? default,
-				config?.ShowPosition ?? default,
-				config?.ShowPosition ?? default,
-				config?.ShowPosition ?? default,
-				config?.ShowRotation ?? default,
-				config?.ShowRotation ?? default,
-				config?.ShowDifficultyAdjustment ?? default,
-				config?.ShowDifficultyAdjustment ?? default,
-				config?.ShowDifficultyAdjustment ?? default,
-				config?.ShowDifficultyAdjustment ?? default,
-				config?.ShowDuffle ?? default,
-			};
 			dx = 8f;
-			dy = 0;
 
 			float xLength = 0;
 			float yHeight = config?.FontSize ?? Constants.DEFAULT_FONT_SIZE;
@@ -156,7 +139,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 				xLength += gfxSize.X + ((config?.FontSize ?? Constants.DEFAULT_FONT_SIZE) * 2.5f) + gfxSize2.X;
 				yHeight = gfxSize.Y + 2f;
 			}
-			_graphics?.FillRectangle(brushes["black"], 0, 0, xLength, yHeight);
+			_graphics?.FillRectangle(brushes["black"], dx - 8f, dy, dx + xLength, dy + yHeight);
 
 			for (var i = 0; i < labels.Count; i++)
 			{

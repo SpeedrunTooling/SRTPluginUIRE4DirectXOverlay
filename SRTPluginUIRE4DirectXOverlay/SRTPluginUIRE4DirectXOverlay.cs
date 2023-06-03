@@ -15,14 +15,14 @@ using System.Collections.Generic;
 
 namespace SRTPluginUIRE4DirectXOverlay
 {
-	public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>, IPluginConsumer
+    public class SRTPluginUIRE4DirectXOverlay : PluginBase<SRTPluginProducerRE4R.SRTPluginProducerRE4R>, IPluginConsumer
     {
-		private const int DRAW_LOOP_INTERVAL = 16;
+        private const int DRAW_LOOP_INTERVAL = 16;
 
-		public override IPluginInfo Info => new PluginInfo();
+        public override IPluginInfo Info => new PluginInfo();
 
-		private readonly ILogger<SRTPluginUIRE4DirectXOverlay> logger;
-		private IPluginHost pluginHost;
+        private readonly ILogger<SRTPluginUIRE4DirectXOverlay> logger;
+        private IPluginHost pluginHost;
 
         private SRTPluginProducerRE4R.SRTPluginProducerRE4R? producer;
         private PluginConfiguration? Config => producer?.Configuration as PluginConfiguration;
@@ -34,70 +34,154 @@ namespace SRTPluginUIRE4DirectXOverlay
         private OverlayWindow? window;
         private Graphics? graphics;
         private SharpDX.Direct2D1.WindowRenderTarget? device;
-		private UIComponents? ui;
+        private UIComponents? ui;
 
-		private Process? GetProcess() => Process.GetProcessesByName("re4")?.FirstOrDefault();
+        private Process? GetProcess() => Process.GetProcessesByName("re4")?.FirstOrDefault();
         private Process? gameProcess;
         private IntPtr gameWindowHandle;
-        float? duffel = null;
+        private float? duffel = null;
+        private List<string> labels;
+        private List<string> vals;
+        private List<string> labels2;
+        private List<string> vals2;
+        List<bool> enabled;
+        List<bool> enabled2;
 
         public SRTPluginUIRE4DirectXOverlay(ILogger<SRTPluginUIRE4DirectXOverlay> logger, IPluginHost pluginHost) : base()
         {
             this.pluginHost = pluginHost;
             this.logger = logger;
 
-			this.producer = GetProducerReference();
-			if (producer == default)
-				throw new PluginNotFoundException(nameof(SRTPluginProducerRE4R.SRTPluginProducerRE4R));
+            this.producer = GetProducerReference();
+            if (producer == default)
+                throw new PluginNotFoundException(nameof(SRTPluginProducerRE4R.SRTPluginProducerRE4R));
 
-			this.gameProcess = GetProcess();
-			if (gameProcess == default)
-				throw new PluginInitializationException(nameof(SRTPluginUIRE4DirectXOverlay), $"Unable to initialize plugin.{Environment.NewLine}\"{nameof(gameProcess)}\" is null or default");
+            this.gameProcess = GetProcess();
+            if (gameProcess == default)
+                throw new PluginInitializationException(nameof(SRTPluginUIRE4DirectXOverlay), $"Unable to initialize plugin.{Environment.NewLine}\"{nameof(gameProcess)}\" is null or default");
 
-			Init();
-		}
+            Init();
+        }
 
-		private SRTPluginProducerRE4R.SRTPluginProducerRE4R? GetProducerReference() => pluginHost.GetPluginReference<SRTPluginProducerRE4R.SRTPluginProducerRE4R>(nameof(SRTPluginProducerRE4R.SRTPluginProducerRE4R)) ?? default;
+        private SRTPluginProducerRE4R.SRTPluginProducerRE4R? GetProducerReference() => pluginHost.GetPluginReference<SRTPluginProducerRE4R.SRTPluginProducerRE4R>(nameof(SRTPluginProducerRE4R.SRTPluginProducerRE4R)) ?? default;
 
-		public void Init()
+        public void Init()
         {
-			gameWindowHandle = gameProcess?.MainWindowHandle ?? default;
+            gameWindowHandle = gameProcess?.MainWindowHandle ?? default;
 
-			DEVMODE devMode = default;
-			devMode.dmSize = (short)Marshal.SizeOf<DEVMODE>();
-			PInvoke.EnumDisplaySettings(null, -1, ref devMode);
+            DEVMODE devMode = default;
+            devMode.dmSize = (short)Marshal.SizeOf<DEVMODE>();
+            PInvoke.EnumDisplaySettings(null, -1, ref devMode);
 
-			// Create and initialize the overlay window.
-			window = new OverlayWindow(0, 0, devMode.dmPelsWidth, devMode.dmPelsHeight);
-			window?.Create();
+            // Create and initialize the overlay window.
+            window = new OverlayWindow(0, 0, devMode.dmPelsWidth, devMode.dmPelsHeight);
+            window?.Create();
 
-			// Create and initialize the graphics object.
-			graphics = new Graphics()
-			{
-				MeasureFPS = false,
-				PerPrimitiveAntiAliasing = false,
-				TextAntiAliasing = true,
-				UseMultiThreadedFactories = false,
-				VSync = false,
-				Width = window?.Width ?? 0,
-				Height = window?.Height ?? 0,
-				WindowHandle = window?.Handle ?? default
-			};
-			graphics?.Setup();
+            // Create and initialize the graphics object.
+            graphics = new Graphics()
+            {
+                MeasureFPS = false,
+                PerPrimitiveAntiAliasing = false,
+                TextAntiAliasing = true,
+                UseMultiThreadedFactories = false,
+                VSync = false,
+                Width = window?.Width ?? 0,
+                Height = window?.Height ?? 0,
+                WindowHandle = window?.Handle ?? default
+            };
+            graphics?.Setup();
 
-			// Get a refernence to the underlying RenderTarget from SharpDX. This'll be used to draw portions of images.
-			device = typeof(Graphics).GetField("_device", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(graphics) as SharpDX.Direct2D1.WindowRenderTarget;
+            // Get a refernence to the underlying RenderTarget from SharpDX. This'll be used to draw portions of images.
+            device = typeof(Graphics).GetField("_device", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(graphics) as SharpDX.Direct2D1.WindowRenderTarget;
 
-			ui = new UIComponents(graphics);
+            ui = new UIComponents(graphics);
 
-			renderThreadCTS = new CancellationTokenSource();
-			renderThread = new Thread(ReceiveData)
-			{
-				IsBackground = true,
-				Priority = ThreadPriority.Normal,
-			};
-			renderThread.Start();
-		}
+            labels = new List<string>()
+            {
+                "IGT:",
+                "PTAS:",
+                "SPINEL:",
+                "X:",
+                "Y:",
+                "Z:",
+                "RW:",
+                "RY:",
+                "RANK:",
+                "ACTION POINT:",
+                "ITEM POINT:",
+                "KILL COUNT:",
+                "DUFFLE:",
+            };
+
+            vals = new List<string>()
+            {
+                gameMemory?.Timer?.IGTFormattedString ?? GameTimer.IGT_DEFAULT_STRING,
+                (gameMemory?.PTAS ?? default).ToString(),
+                (gameMemory?.Spinel ?? default).ToString(),
+                (gameMemory?.PlayerContext?.Position?.X ?? default).ToString("F3"),
+                (gameMemory?.PlayerContext?.Position?.Y ?? default).ToString("F3"),
+                (gameMemory?.PlayerContext?.Position?.Z ?? default).ToString("F3"),
+                (gameMemory?.PlayerContext?.Rotation?.W ?? default).ToString("F3"),
+                (gameMemory?.PlayerContext?.Rotation?.Y ?? default).ToString("F3"),
+                (gameMemory?.Rank.Rank ?? default).ToString(),
+                (gameMemory?.Rank.ActionPoint ?? default).ToString(),
+                (gameMemory?.Rank.ItemPoint ?? default).ToString(),
+                (gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(),
+                duffel is not null ? $"On {(duffel ?? default).ToString("F3")}" : "Off",
+            };
+
+            labels2 = new List<string>()
+            {
+                "ACTIVE:",
+                "CUTSCENE:",
+                "INVENTORY:",
+                "PAUSE:",
+                "TIMER OFFSET:",
+            };
+
+            vals2 = new List<string>()
+            {
+                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.GameElapsedTime ?? default) ?? string.Empty,
+                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.DemoSpendingTime ?? default) ?? string.Empty,
+                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.InventorySpendingTime ?? default) ?? string.Empty,
+                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.PauseSpendingTime ?? default) ?? string.Empty,
+                ui?.FormattedString(gameMemory?.Timer?.TimerOffset ?? default) ?? string.Empty,
+            };
+
+            enabled = new List<bool>()
+            {
+                Config?.ShowIGT ?? default,
+                Config?.ShowPTAS ?? default,
+                Config?.ShowPTAS ?? default,
+                Config?.ShowPosition ?? default,
+                Config?.ShowPosition ?? default,
+                Config?.ShowPosition ?? default,
+                Config?.ShowRotation ?? default,
+                Config?.ShowRotation ?? default,
+                Config?.ShowDifficultyAdjustment ?? default,
+                Config?.ShowDifficultyAdjustment ?? default,
+                Config?.ShowDifficultyAdjustment ?? default,
+                Config?.ShowDifficultyAdjustment ?? default,
+                Config?.ShowDuffle ?? default,
+            };
+
+            enabled2 = new List<bool>()
+            {
+                Config?.Debug ?? default,
+                Config?.Debug ?? default,
+                Config?.Debug ?? default,
+                Config?.Debug ?? default,
+                Config?.Debug ?? default,
+            };
+
+            renderThreadCTS = new CancellationTokenSource();
+            renderThread = new Thread(ReceiveData)
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.Normal,
+            };
+            renderThread.Start();
+        }
 
         public override void Dispose()
         {
@@ -112,55 +196,55 @@ namespace SRTPluginUIRE4DirectXOverlay
             window = null;
             gameProcess?.Dispose();
             gameProcess = null;
-			ui?.Dispose();
-			ui = null;
-			return;
+            ui?.Dispose();
+            ui = null;
+            return;
         }
 
-		public override async ValueTask DisposeAsync()
-		{
+        public override async ValueTask DisposeAsync()
+        {
             Dispose();
             GC.SuppressFinalize(this);
             await Task.CompletedTask;
-		}
+        }
 
         public void ReceiveData()
         {
-			while (!(renderThreadCTS?.Token.IsCancellationRequested ?? false))
+            while (!(renderThreadCTS?.Token.IsCancellationRequested ?? false))
             {
-				Thread.Sleep(DRAW_LOOP_INTERVAL); // Don't go too hard now ;3
+                Thread.Sleep(DRAW_LOOP_INTERVAL); // Don't go too hard now ;3
 
-				gameMemory = producer?.Refresh() as IGameMemoryRE4R;
-				window?.PlaceAbove(gameWindowHandle);
+                gameMemory = producer?.Refresh() as IGameMemoryRE4R;
+                window?.PlaceAbove(gameWindowHandle);
                 window?.FitTo(gameWindowHandle, true);
 
-				try
-				{
-					graphics?.BeginScene();
-					graphics?.ClearScene();
-					if (device is not null)
-						device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(Config?.ScalingFactor ?? 1f, 0f, 0f, Config?.ScalingFactor ?? 1f, 0f, 0f);
-					DrawOverlay();
-				}
-				catch (Exception ex)
-				{
-					logger.LogCritical(ex, $"A {ex.GetType().Name} exception occurred while trying to render overlay");
-				}
-				finally
-				{
-					graphics?.EndScene();
-				}
+                try
+                {
+                    graphics?.BeginScene();
+                    graphics?.ClearScene();
+                    if (device is not null)
+                        device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(Config?.ScalingFactor ?? 1f, 0f, 0f, Config?.ScalingFactor ?? 1f, 0f, 0f);
+                    DrawOverlay();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogCritical(ex, $"A {ex.GetType().Name} exception occurred while trying to render overlay");
+                }
+                finally
+                {
+                    graphics?.EndScene();
+                }
             }
         }
 
         private void DrawOverlay()
         {
-			if ((gameMemory?.Timer?.MeasureDemoSpendingTime ?? default) && (Config?.HideUICutscene ?? default)) return;
-			if ((gameMemory?.Timer?.MeasurePauseSpendingTime ?? default) && (Config?.HideUIPause ?? default)) return;
-			if ((gameMemory?.Timer?.MeasureInventorySpendingTime ?? default) && (Config?.HideUIInventory ?? default)) return;
-			if ((gameMemory?.IsInGameShopOpen ?? default) && (Config?.HideUIInShop ?? default)) return;
+            if ((gameMemory?.Timer?.MeasureDemoSpendingTime ?? default) && (Config?.HideUICutscene ?? default)) return;
+            if ((gameMemory?.Timer?.MeasurePauseSpendingTime ?? default) && (Config?.HideUIPause ?? default)) return;
+            if ((gameMemory?.Timer?.MeasureInventorySpendingTime ?? default) && (Config?.HideUIInventory ?? default)) return;
+            if ((gameMemory?.IsInGameShopOpen ?? default) && (Config?.HideUIInShop ?? default)) return;
 
-			float baseXOffset = Config?.PositionX ?? default;
+            float baseXOffset = Config?.PositionX ?? default;
             float baseYOffset = Config?.PositionY ?? default;
 
             // Player HP
@@ -169,109 +253,83 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             float textOffsetX = 0f;
             textOffsetX = (Config?.PositionX ?? default) + 15f;
-			if (Config?.AlignInfoTop ?? default)
-			{
-				List<string> labels = new List<string>()
-				{
-					"IGT:",
-					"PTAS:",
-					"SPINEL:",
-					"X:",
-					"Y:",
-					"Z:",
-					"RW:",
-					"RY:",
-					"RANK:",
-					"ACTION POINT:",
-					"ITEM POINT:",
-					"KILL COUNT:",
-					"DUFFLE:",
-				};
+            if (Config?.AlignInfoTop ?? default)
+            {
+                statsYOffset = 0f;
+                ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels, vals, ui?.brushes["green"], enabled);
+            }
 
-				List<string> vals = new List<string>()
-				{
-					gameMemory?.Timer?.IGTFormattedString ?? GameTimer.IGT_DEFAULT_STRING,
-					(gameMemory?.PTAS ?? default).ToString(),
-					(gameMemory?.Spinel ?? default).ToString(),
-					(gameMemory?.PlayerContext?.Position?.X ?? default).ToString("F3"),
-					(gameMemory?.PlayerContext?.Position?.Y ?? default).ToString("F3"),
-					(gameMemory?.PlayerContext?.Position?.Z ?? default).ToString("F3"),
-					(gameMemory?.PlayerContext?.Rotation?.W ?? default).ToString("F3"),
-					(gameMemory?.PlayerContext?.Rotation?.Y ?? default).ToString("F3"),
-					(gameMemory?.Rank.Rank ?? default).ToString(),
-					(gameMemory?.Rank.ActionPoint ?? default).ToString(),
-					(gameMemory?.Rank.ItemPoint ?? default).ToString(),
-					(gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(),
-					duffel is not null ? $"On {(duffel ?? default).ToString("F3")}" : "Off",
-				};
-				ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels, vals, ui?.brushes["green"]);
-			}
+            float gfxHeight = ui?.GetStringSize(graphics, ui?.fonts[Config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], "0", Config?.FontSize ?? Constants.DEFAULT_FONT_SIZE).Y ?? default;
 
-			if (!(Config?.AlignInfoTop ?? default) && (Config?.ShowIGT ?? default))
-				ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "IGT:", gameMemory?.Timer?.IGTFormattedString ?? GameTimer.IGT_DEFAULT_STRING, ui?.brushes["green"]);
+            if ((Config?.AlignInfoTop ?? default) && (Config?.Debug ?? default))
+            {
+                statsYOffset += gfxHeight;
+                ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels2, vals2, ui?.brushes["green"], enabled2);
+            }
 
-			float gfxHeight = ui?.GetStringSize(graphics, ui?.fonts[Config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], "0", Config?.FontSize ?? Constants.DEFAULT_FONT_SIZE).Y ?? default;
+            if (!(Config?.AlignInfoTop ?? default))
+            {
+                if (Config?.ShowIGT ?? default)
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "IGT:", gameMemory?.Timer?.IGTFormattedString ?? GameTimer.IGT_DEFAULT_STRING, ui?.brushes["green"]);
 
-			if (!(Config?.AlignInfoTop ?? default))
-			{
-				if (Config?.Debug ?? default)
-				{
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ACTIVE:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.GameElapsedTime ?? default) ?? string.Empty, ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "CUTSCENE:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.DemoSpendingTime ?? default) ?? string.Empty, ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "INVENTORY:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.InventorySpendingTime ?? default) ?? string.Empty, ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "PAUSE:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.PauseSpendingTime ?? default) ?? string.Empty, ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "TIMER OFFSET:", ui?.FormattedString(gameMemory?.Timer?.TimerOffset ?? default) ?? string.Empty, ui?.brushes["green"]);
-				}
+                if (Config?.Debug ?? default)
+                {
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ACTIVE:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.GameElapsedTime ?? default) ?? string.Empty, ui?.brushes["green"]);
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "CUTSCENE:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.DemoSpendingTime ?? default) ?? string.Empty, ui?.brushes["green"]);
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "INVENTORY:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.InventorySpendingTime ?? default) ?? string.Empty, ui?.brushes["green"]);
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "PAUSE:", ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.PauseSpendingTime ?? default) ?? string.Empty, ui?.brushes["green"]);
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "TIMER OFFSET:", ui?.FormattedString(gameMemory?.Timer?.TimerOffset ?? default) ?? string.Empty, ui?.brushes["green"]);
+                }
 
-				if (Config?.ShowPTAS ?? default)
-				{
-					textOffsetX = (Config?.PositionX ?? default) + 15f;
-					statsYOffset += gfxHeight * 1.2f;
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "PTAS:", (gameMemory?.PTAS ?? default).ToString(), ui?.brushes["green"]);
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "SPINEL:", (gameMemory?.Spinel ?? default).ToString(), ui?.brushes["green"]);
-				}
+                if (Config?.ShowPTAS ?? default)
+                {
+                    textOffsetX = (Config?.PositionX ?? default) + 15f;
+                    statsYOffset += gfxHeight * 1.2f;
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "PTAS:", (gameMemory?.PTAS ?? default).ToString(), ui?.brushes["green"]);
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "SPINEL:", (gameMemory?.Spinel ?? default).ToString(), ui?.brushes["green"]);
+                }
 
-				if (Config?.ShowPosition ?? default)
-				{
-					textOffsetX = (Config?.PositionX ?? default) + 15f;
-					statsYOffset += gfxHeight * 1.2f;
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "X:", (gameMemory?.PlayerContext?.Position.X ?? default).ToString("F3"), ui?.brushes["green"]);
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "Y:", (gameMemory?.PlayerContext?.Position.Y ?? default).ToString("F3"), ui?.brushes["green"]);
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "Z:", (gameMemory?.PlayerContext?.Position.Z ?? default).ToString("F3"), ui?.brushes["green"]);
-				}
+                if (Config?.ShowPosition ?? default)
+                {
+                    textOffsetX = (Config?.PositionX ?? default) + 15f;
+                    statsYOffset += gfxHeight * 1.2f;
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "X:", (gameMemory?.PlayerContext?.Position.X ?? default).ToString("F3"), ui?.brushes["green"]);
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "Y:", (gameMemory?.PlayerContext?.Position.Y ?? default).ToString("F3"), ui?.brushes["green"]);
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "Z:", (gameMemory?.PlayerContext?.Position.Z ?? default).ToString("F3"), ui?.brushes["green"]);
+                }
 
-				if (Config?.ShowRotation ?? default)
-				{
-					textOffsetX = (Config?.PositionX ?? default) + 15f;
-					statsYOffset += gfxHeight * 1.2f;
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "RW:", (gameMemory?.PlayerContext?.Rotation.W ?? default).ToString("F3"), ui?.brushes["green"]);
-					ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "RY:", (gameMemory?.PlayerContext?.Rotation.Y ?? default).ToString("F3"), ui?.brushes["green"]);
-				}
+                if (Config?.ShowRotation ?? default)
+                {
+                    textOffsetX = (Config?.PositionX ?? default) + 15f;
+                    statsYOffset += gfxHeight * 1.2f;
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "RW:", (gameMemory?.PlayerContext?.Rotation.W ?? default).ToString("F3"), ui?.brushes["green"]);
+                    ui?.DrawTextBlockRow(graphics, Config, ref textOffsetX, ref statsYOffset, "RY:", (gameMemory?.PlayerContext?.Rotation.Y ?? default).ToString("F3"), ui?.brushes["green"]);
+                }
 
-				if (Config?.ShowDifficultyAdjustment ?? default)
-				{
-					textOffsetX = (Config?.PositionX ?? default) + 15f;
+                if (Config?.ShowDifficultyAdjustment ?? default)
+                {
+                    textOffsetX = (Config?.PositionX ?? default) + 15f;
                     ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "RANK:", (gameMemory?.Rank.Rank ?? default).ToString(), ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ACTION POINT:", (gameMemory?.Rank.ActionPoint ?? default).ToString(), ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ITEM POINT:", (gameMemory?.Rank.ItemPoint ?? default).ToString(), ui?.brushes["green"]);
-					ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "KILL COUNT:", (gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(), ui?.brushes["green"]);
-				}
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ACTION POINT:", (gameMemory?.Rank.ActionPoint ?? default).ToString(), ui?.brushes["green"]);
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "ITEM POINT:", (gameMemory?.Rank.ItemPoint ?? default).ToString(), ui?.brushes["green"]);
+                    ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "KILL COUNT:", (gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(), ui?.brushes["green"]);
+                }
 
-				if (Config?.ShowDuffle ?? default)
-				{
-					if (!(gameMemory?.PlayerContext?.IsLoaded ?? default))
-						duffel = null;
+                if (Config?.ShowDuffle ?? default)
+                {
+                    if (!(gameMemory?.PlayerContext?.IsLoaded ?? default))
+                        duffel = null;
 
-					if (string.Equals(gameMemory?.CurrentChapter, "Chapter15"))
-					{
-						if ((gameMemory?.PlayerContext?.Position.Y ?? default) < 0f && (gameMemory?.PlayerContext?.Position.Y ?? default) >= -0.5f)
-							duffel = null;
-						else if ((gameMemory?.PlayerContext?.Position.Y ?? default) < -0.5f && (gameMemory?.PlayerContext?.Position.Y ?? default) > -1)
-							duffel = gameMemory?.PlayerContext?.Position.Y ?? default;
-						ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "Duffle:", duffel is not null ? $"On {duffel?.ToString("F3")}" : "Off", duffel is not null ? ui?.brushes["green"] : ui?.brushes["red"]);
-					}
-				}
-			}
+                    if (string.Equals(gameMemory?.CurrentChapter, "Chapter15"))
+                    {
+                        if ((gameMemory?.PlayerContext?.Position.Y ?? default) < 0f && (gameMemory?.PlayerContext?.Position.Y ?? default) >= -0.5f)
+                            duffel = null;
+                        else if ((gameMemory?.PlayerContext?.Position.Y ?? default) < -0.5f && (gameMemory?.PlayerContext?.Position.Y ?? default) > -1)
+                            duffel = gameMemory?.PlayerContext?.Position.Y ?? default;
+                        ui?.DrawTextBlock(graphics, Config, ref textOffsetX, ref statsYOffset, "Duffle:", duffel is not null ? $"On {duffel?.ToString("F3")}" : "Off", duffel is not null ? ui?.brushes["green"] : ui?.brushes["red"]);
+                    }
+                }
+            }
 
             var xOffsetPlayer = (Config?.PlayerHPPositionX == -1 ? statsXOffset : Config?.PlayerHPPositionX) ?? default;
             var yOffsetPlayer = (Config?.PlayerHPPositionY == -1 ? statsYOffset : Config?.PlayerHPPositionY) ?? default;
@@ -280,8 +338,8 @@ namespace SRTPluginUIRE4DirectXOverlay
             HPType type = (HPType)(Config?.PlayerHPType ?? default);
             HPPosition alignment = (HPPosition)(Config?.PlayerHPPosition ?? default);
 
-
-            ui?.DrawHP(graphics, window, Config, gameMemory?.PlayerContext, type, alignment, ref xOffsetPlayer, ref yOffsetPlayer, 4f);
+            if (gameMemory?.PlayerContext is not null && (gameMemory?.PlayerContext?.IsLoaded ?? false))
+                ui?.DrawHP(graphics, window, Config, gameMemory?.PlayerContext, type, alignment, ref xOffsetPlayer, ref yOffsetPlayer, 4f);
             if (gameMemory?.PartnerContext?[0] is not null && (gameMemory?.PartnerContext?[0]?.IsLoaded ?? false))
                 ui?.DrawHP(graphics, window, Config, gameMemory?.PartnerContext?[0], type, alignment, ref xOffsetPlayer, ref yOffsetPlayer, 3f);
             if (gameMemory?.PartnerContext?[1] is not null && (gameMemory?.PartnerContext?[1]?.IsLoaded ?? false))
@@ -289,7 +347,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 
             //// Enemy HP
             var xOffset = (Config?.EnemyHPPositionX == -1 ? statsXOffset : Config?.EnemyHPPositionX) ?? default;
-			var yOffset = 0f;
+            var yOffset = 0f;
             if (Config?.EnemyHPPositionY == -1 && alignment != HPPosition.Right)
                 yOffset = yOffsetPlayer;
             else if (Config?.EnemyHPPositionY != -1)
@@ -297,39 +355,39 @@ namespace SRTPluginUIRE4DirectXOverlay
             else
                 yOffset = statsYOffset;
 
-			yOffset += 8f;
-			if ((Config?.EnemyLimit ?? -1) == -1)
-			{
-			    var enemyList = (gameMemory?.Enemies ?? new PlayerContext[0])
-			        .Where(a => GetEnemyFilters(a))
-			        .OrderByDescending(a => a?.Health?.MaxHP ?? default)
-			        .ThenBy(a => a?.Health?.Percentage)
-			        .ThenByDescending(a => a?.Health?.CurrentHP);
+            yOffset += 8f;
+            if ((Config?.EnemyLimit ?? -1) == -1)
+            {
+                var enemyList = (gameMemory?.Enemies ?? new PlayerContext[0])
+                    .Where(a => GetEnemyFilters(a))
+                    .OrderByDescending(a => a?.Health?.MaxHP ?? default)
+                    .ThenBy(a => a?.Health?.Percentage)
+                    .ThenByDescending(a => a?.Health?.CurrentHP);
 
-			    if (Config?.ShowHPBars ?? default)
-					if ((enemyList.FirstOrDefault()?.IsBoss ?? default) && (Config?.CenterBossHP ?? default))
+                if (Config?.ShowHPBars ?? default)
+                    if ((enemyList.FirstOrDefault()?.IsBoss ?? default) && (Config?.CenterBossHP ?? default))
                         ui?.DrawHP(graphics, window, Config, enemyList.FirstOrDefault(), type, HPPosition.Custom, ref xOffsetPlayer, ref yOffset, 0f);
-					else
-						foreach (PlayerContext? enemy in enemyList)
-							ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffset, 0f);
+                    else
+                        foreach (PlayerContext? enemy in enemyList)
+                            ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffset, 0f);
             }
-			else
-			{
-			    var enemyListLimited = (gameMemory?.Enemies ?? new PlayerContext[0])
-					.Where(a => GetEnemyFilters(a))
-			        .OrderByDescending(a => a?.Health?.MaxHP)
-			        .ThenBy(a => a?.Health?.Percentage)
-			        .ThenByDescending(a => a?.Health?.CurrentHP)
-			        .Take(Config?.EnemyLimit ?? default);
+            else
+            {
+                var enemyListLimited = (gameMemory?.Enemies ?? new PlayerContext[0])
+                    .Where(a => GetEnemyFilters(a))
+                    .OrderByDescending(a => a?.Health?.MaxHP)
+                    .ThenBy(a => a?.Health?.Percentage)
+                    .ThenByDescending(a => a?.Health?.CurrentHP)
+                    .Take(Config?.EnemyLimit ?? default);
 
-			    if (Config?.ShowHPBars ?? default)
+                if (Config?.ShowHPBars ?? default)
                     if ((enemyListLimited.FirstOrDefault()?.IsBoss ?? default) && (Config?.CenterBossHP ?? default))
                         ui?.DrawHP(graphics, window, Config, enemyListLimited.FirstOrDefault(), type, HPPosition.Custom, ref xOffsetPlayer, ref yOffset, 0f);
                     else
                         foreach (PlayerContext? enemy in enemyListLimited)
-                        ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffsetPlayer, 0f);
+                            ui?.DrawHP(graphics, window, Config, enemy, type, HPPosition.Left, ref xOffsetPlayer, ref yOffsetPlayer, 0f);
             }
-		}
+        }
 
         private bool GetEnemyFilters(PlayerContext? enemy)
         {
