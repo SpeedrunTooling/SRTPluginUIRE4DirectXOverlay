@@ -203,7 +203,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			// If show boss only checked and is not boss cacel draw action
             if ((config?.ShowBossOnly ?? default) && (!pc?.IsBoss ?? default)) return;
             // If is boss and center boss hp is checked then reroute draw method to DrawBossBar
-            if ((pc?.IsBoss ?? default) && (config?.CenterBossHP ?? default))
+            if ((pc?.IsBoss ?? default) && (BossPosition)(config?.BossHPPosition ?? default) == BossPosition.Center)
 			{
 				DrawBossBar(_graphics, _window, config, pc);
 				return;

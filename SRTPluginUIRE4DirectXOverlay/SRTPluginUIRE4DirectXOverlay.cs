@@ -365,7 +365,7 @@ namespace SRTPluginUIRE4DirectXOverlay
                     .ThenByDescending(a => a?.Health?.CurrentHP);
 
                 if (Config?.ShowHPBars ?? default)
-                    if ((enemyList.FirstOrDefault()?.IsBoss ?? default) && (Config?.CenterBossHP ?? default))
+                    if ((enemyList.FirstOrDefault()?.IsBoss ?? default) && (BossPosition)(Config?.BossHPPosition ?? default) == BossPosition.Center)
                         ui?.DrawHP(graphics, window, Config, enemyList.FirstOrDefault(), type, HPPosition.Custom, ref xOffsetPlayer, ref yOffset, 0f);
                     else
                         foreach (PlayerContext? enemy in enemyList)
@@ -381,7 +381,7 @@ namespace SRTPluginUIRE4DirectXOverlay
                     .Take(Config?.EnemyLimit ?? default);
 
                 if (Config?.ShowHPBars ?? default)
-                    if ((enemyListLimited.FirstOrDefault()?.IsBoss ?? default) && (Config?.CenterBossHP ?? default))
+                    if ((enemyListLimited.FirstOrDefault()?.IsBoss ?? default) && ((BossPosition)(Config?.BossHPPosition ?? default) == BossPosition.Center))
                         ui?.DrawHP(graphics, window, Config, enemyListLimited.FirstOrDefault(), type, HPPosition.Custom, ref xOffsetPlayer, ref yOffset, 0f);
                     else
                         foreach (PlayerContext? enemy in enemyListLimited)
