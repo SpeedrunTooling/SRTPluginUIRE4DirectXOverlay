@@ -113,23 +113,6 @@ namespace SRTPluginUIRE4DirectXOverlay
                 "DUFFLE:",
             };
 
-            vals = new List<string>()
-            {
-                gameMemory?.Timer?.IGTFormattedString ?? GameTimer.IGT_DEFAULT_STRING,
-                (gameMemory?.PTAS ?? default).ToString(),
-                (gameMemory?.Spinel ?? default).ToString(),
-                (gameMemory?.PlayerContext?.Position?.X ?? default).ToString("F3"),
-                (gameMemory?.PlayerContext?.Position?.Y ?? default).ToString("F3"),
-                (gameMemory?.PlayerContext?.Position?.Z ?? default).ToString("F3"),
-                (gameMemory?.PlayerContext?.Rotation?.W ?? default).ToString("F3"),
-                (gameMemory?.PlayerContext?.Rotation?.Y ?? default).ToString("F3"),
-                (gameMemory?.Rank.Rank ?? default).ToString(),
-                (gameMemory?.Rank.ActionPoint ?? default).ToString(),
-                (gameMemory?.Rank.ItemPoint ?? default).ToString(),
-                (gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(),
-                duffel is not null ? $"On {(duffel ?? default).ToString("F3")}" : "Off",
-            };
-
             labels2 = new List<string>()
             {
                 "ACTIVE:",
@@ -137,41 +120,6 @@ namespace SRTPluginUIRE4DirectXOverlay
                 "INVENTORY:",
                 "PAUSE:",
                 "TIMER OFFSET:",
-            };
-
-            vals2 = new List<string>()
-            {
-                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.GameElapsedTime ?? default) ?? string.Empty,
-                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.DemoSpendingTime ?? default) ?? string.Empty,
-                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.InventorySpendingTime ?? default) ?? string.Empty,
-                ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.PauseSpendingTime ?? default) ?? string.Empty,
-                ui?.FormattedString(gameMemory?.Timer?.TimerOffset ?? default) ?? string.Empty,
-            };
-
-            enabled = new List<bool>()
-            {
-                Config?.ShowIGT ?? default,
-                Config?.ShowPTAS ?? default,
-                Config?.ShowPTAS ?? default,
-                Config?.ShowPosition ?? default,
-                Config?.ShowPosition ?? default,
-                Config?.ShowPosition ?? default,
-                Config?.ShowRotation ?? default,
-                Config?.ShowRotation ?? default,
-                Config?.ShowDifficultyAdjustment ?? default,
-                Config?.ShowDifficultyAdjustment ?? default,
-                Config?.ShowDifficultyAdjustment ?? default,
-                Config?.ShowDifficultyAdjustment ?? default,
-                Config?.ShowDuffle ?? default,
-            };
-
-            enabled2 = new List<bool>()
-            {
-                Config?.Debug ?? default,
-                Config?.Debug ?? default,
-                Config?.Debug ?? default,
-                Config?.Debug ?? default,
-                Config?.Debug ?? default,
             };
 
             renderThreadCTS = new CancellationTokenSource();
@@ -208,6 +156,61 @@ namespace SRTPluginUIRE4DirectXOverlay
             await Task.CompletedTask;
         }
 
+        public void UpdateListVales()
+        {
+			vals = new List<string>()
+			{
+				gameMemory?.Timer?.IGTFormattedString ?? GameTimer.IGT_DEFAULT_STRING,
+				(gameMemory?.PTAS ?? default).ToString(),
+				(gameMemory?.Spinel ?? default).ToString(),
+				(gameMemory?.PlayerContext?.Position?.X ?? default).ToString("F3"),
+				(gameMemory?.PlayerContext?.Position?.Y ?? default).ToString("F3"),
+				(gameMemory?.PlayerContext?.Position?.Z ?? default).ToString("F3"),
+				(gameMemory?.PlayerContext?.Rotation?.W ?? default).ToString("F3"),
+				(gameMemory?.PlayerContext?.Rotation?.Y ?? default).ToString("F3"),
+				(gameMemory?.Rank.Rank ?? default).ToString(),
+				(gameMemory?.Rank.ActionPoint ?? default).ToString(),
+				(gameMemory?.Rank.ItemPoint ?? default).ToString(),
+				(gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(),
+				duffel is not null ? $"On {(duffel ?? default).ToString("F3")}" : "Off",
+			};
+
+			vals2 = new List<string>()
+			{
+				ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.GameElapsedTime ?? default) ?? string.Empty,
+				ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.DemoSpendingTime ?? default) ?? string.Empty,
+				ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.InventorySpendingTime ?? default) ?? string.Empty,
+				ui?.FormattedString(gameMemory?.Timer?.GameSaveData?.PauseSpendingTime ?? default) ?? string.Empty,
+				ui?.FormattedString(gameMemory?.Timer?.TimerOffset ?? default) ?? string.Empty,
+			};
+
+			enabled = new List<bool>()
+			{
+				Config?.ShowIGT ?? default,
+				Config?.ShowPTAS ?? default,
+				Config?.ShowPTAS ?? default,
+				Config?.ShowPosition ?? default,
+				Config?.ShowPosition ?? default,
+				Config?.ShowPosition ?? default,
+				Config?.ShowRotation ?? default,
+				Config?.ShowRotation ?? default,
+				Config?.ShowDifficultyAdjustment ?? default,
+				Config?.ShowDifficultyAdjustment ?? default,
+				Config?.ShowDifficultyAdjustment ?? default,
+				Config?.ShowDifficultyAdjustment ?? default,
+				Config?.ShowDuffle ?? default,
+			};
+
+			enabled2 = new List<bool>()
+			{
+				Config?.Debug ?? default,
+				Config?.Debug ?? default,
+				Config?.Debug ?? default,
+				Config?.Debug ?? default,
+				Config?.Debug ?? default,
+			};
+		}
+
         public void ReceiveData()
         {
             while (!(renderThreadCTS?.Token.IsCancellationRequested ?? false))
@@ -224,7 +227,8 @@ namespace SRTPluginUIRE4DirectXOverlay
                     graphics?.ClearScene();
                     if (device is not null)
                         device.Transform = new SharpDX.Mathematics.Interop.RawMatrix3x2(Config?.ScalingFactor ?? 1f, 0f, 0f, Config?.ScalingFactor ?? 1f, 0f, 0f);
-                    DrawOverlay();
+                    UpdateListVales();
+					DrawOverlay();
                 }
                 catch (Exception ex)
                 {

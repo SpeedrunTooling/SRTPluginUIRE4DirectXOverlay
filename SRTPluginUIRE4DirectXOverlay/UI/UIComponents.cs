@@ -246,7 +246,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			string name = pc?.SurvivorTypeString.Replace("_", " ").ToUpperInvariant() ?? string.Empty;
             float fSize = 24f;
 			float widthBar = GetBossBarSize(fSize);
-			float heightBar = (fSize / 2f) + fSize;
+			float heightBar = (fSize / 4f) + fSize;
 			var xOffset = (((window?.Width ?? default) / 2f) - (widthBar / 2f)) * (config?.ScalingFactor ?? default);
 			var yOffset = 4f * (config?.ScalingFactor ?? default);
 			if (pc?.SurvivorTypeString.Contains("dog", StringComparison.InvariantCultureIgnoreCase) ?? default) return;
