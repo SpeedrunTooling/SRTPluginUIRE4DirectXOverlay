@@ -40,12 +40,12 @@ namespace SRTPluginUIRE4DirectXOverlay
         private Process? gameProcess;
         private IntPtr gameWindowHandle;
         private float? duffel = null;
-        private List<string> labels;
-        private List<string> vals;
-        private List<string> labels2;
-        private List<string> vals2;
-        List<bool> enabled;
-        List<bool> enabled2;
+        private List<string>? labels;
+        private List<string>? vals;
+        private List<string>? labels2;
+        private List<string>? vals2;
+        List<bool>? enabled;
+        List<bool>? enabled2;
 
         public SRTPluginUIRE4DirectXOverlay(ILogger<SRTPluginUIRE4DirectXOverlay> logger, IPluginHost pluginHost) : base()
         {
@@ -172,7 +172,7 @@ namespace SRTPluginUIRE4DirectXOverlay
 				(gameMemory?.Rank.ActionPoint ?? default).ToString(),
 				(gameMemory?.Rank.ItemPoint ?? default).ToString(),
 				(gameMemory?.GameStatsKillCountElement.Count ?? default).ToString(),
-				duffel is not null ? $"On {(duffel ?? default).ToString("F3")}" : "Off",
+				duffel is not null ? $"On {duffel ?? default:F3}" : "Off",
 			};
 
 			vals2 = new List<string>()
@@ -260,7 +260,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             if (Config?.AlignInfoTop ?? default)
             {
                 statsYOffset = 0f;
-                ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels, vals, ui?.brushes["green"], enabled);
+                ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels!, vals!, ui?.brushes["green"], enabled!);
             }
 
             float gfxHeight = ui?.GetStringSize(graphics, ui?.fonts[Config?.StringFontName ?? Constants.DEFAULT_FONT_NAME + " Bold"], "0", Config?.FontSize ?? Constants.DEFAULT_FONT_SIZE).Y ?? default;
@@ -268,7 +268,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             if ((Config?.AlignInfoTop ?? default) && (Config?.Debug ?? default))
             {
                 statsYOffset += gfxHeight;
-                ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels2, vals2, ui?.brushes["green"], enabled2);
+                ui?.DrawTextBlockRows(graphics, Config, ref textOffsetX, ref statsYOffset, labels2!, vals2!, ui?.brushes["green"], enabled2!);
             }
 
             if (!(Config?.AlignInfoTop ?? default))
@@ -362,7 +362,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             yOffset += 8f;
             if ((Config?.EnemyLimit ?? -1) == -1)
             {
-                var enemyList = (gameMemory?.Enemies ?? new PlayerContext[0])
+                var enemyList = (gameMemory?.Enemies ?? Array.Empty<PlayerContext>())
                     .Where(a => GetEnemyFilters(a))
                     .OrderByDescending(a => a?.Health?.MaxHP ?? default)
                     .ThenBy(a => a?.Health?.Percentage)
@@ -377,7 +377,7 @@ namespace SRTPluginUIRE4DirectXOverlay
             }
             else
             {
-                var enemyListLimited = (gameMemory?.Enemies ?? new PlayerContext[0])
+                var enemyListLimited = (gameMemory?.Enemies ?? Array.Empty<PlayerContext>())
                     .Where(a => GetEnemyFilters(a))
                     .OrderByDescending(a => a?.Health?.MaxHP)
                     .ThenBy(a => a?.Health?.Percentage)

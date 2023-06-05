@@ -164,27 +164,27 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			ref float xOffset,
 			ref float yOffset,
 			float steps
-		) => DrawHPBar(_graphics, _window, config, pc, hpPosition, ref xOffset, ref yOffset, steps);
+		) => DrawHPBar(_graphics, _window, config, pc, hpType, hpPosition, ref xOffset, ref yOffset, steps);
 
-		private float getHPPercentPosition(float width, float x, float x2, float padding) => x + width - x2 - padding;
+		private float GetHPPercentPosition(float width, float x, float x2, float padding) => x + width - x2 - padding;
 
 		private Rectangle CreateHPContainer(OverlayWindow? _window, PluginConfiguration? config, HPPosition hpPosition, ref float xOffset, ref float yOffset, float widthBar, float heightBar, float steps)
 		{
-			var x = 0f;
-			var y = 0f;
+			float x;
+			float y;
 
 			if (steps == 0f)
 			{
 				x = config?.EnemyHPPositionX ?? default;
-                y = config?.EnemyHPPositionY ?? default;
-            }
-            else
-            {
-                x = config?.PlayerHPPositionX ?? default;
-                y = config?.PlayerHPPositionY ?? default;
-            }
+				y = config?.EnemyHPPositionY ?? default;
+			}
+			else
+			{
+				x = config?.PlayerHPPositionX ?? default;
+				y = config?.PlayerHPPositionY ?? default;
+			}
 
-            if (hpPosition == HPPosition.Left)
+			if (hpPosition == HPPosition.Left)
                 return new Rectangle(xOffset, yOffset += heightBar, xOffset + widthBar, yOffset + heightBar);
             else if (hpPosition == HPPosition.Center)
                 return new Rectangle((((_window?.Width ?? default) - widthBar) / 2f), ((_window?.Height ?? default) - (heightBar * steps)), (((_window?.Width ?? default) - widthBar) / 2f) + widthBar, ((_window?.Height ?? default) - (heightBar * steps) + heightBar));
@@ -194,7 +194,7 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
                 return new Rectangle(x, y += heightBar, x + widthBar, y + heightBar);
         }
         
-		public void DrawHPBar(Graphics? _graphics, OverlayWindow? _window, PluginConfiguration? config, PlayerContext? pc, HPPosition hpPosition, ref float xOffset, ref float yOffset, float steps)
+		public void DrawHPBar(Graphics? _graphics, OverlayWindow? _window, PluginConfiguration? config, PlayerContext? pc, HPType hpType, HPPosition hpPosition, ref float xOffset, ref float yOffset, float steps)
 		{
 			// If show hp disabled cancel draw action
 			if (!config?.ShowHPBars ?? default) return;
@@ -219,10 +219,10 @@ namespace SRTPluginUIRE4DirectXOverlay.UI
 			// Set rect to match position alignment
 			rect = CreateHPContainer(_window, config, hpPosition, ref xOffset, ref yOffset, widthBar, heightBar, steps);
 
-            float endOfBar = getHPPercentPosition(widthBar, rect.Left, gfxSize.X, 8f);
+            float endOfBar = GetHPPercentPosition(widthBar, rect.Left, gfxSize.X, 8f);
 
 			// Draws HP as progress bar with text info
-            if (((HPType)(config?.PlayerHPType ?? default)) == HPType.Bar)
+            if (hpType == HPType.Bar)
 			{
 				var colors = GetColors(steps != 0f ? pc?.HealthState ?? PlayerState.Dead : PlayerState.Danger);
 				_graphics?.DrawRectangle(brushes["lightgrey"], rect.Left, rect.Top, rect.Right, rect.Bottom, 4f);
