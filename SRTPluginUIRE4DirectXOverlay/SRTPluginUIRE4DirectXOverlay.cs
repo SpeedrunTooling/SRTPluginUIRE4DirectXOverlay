@@ -21,6 +21,8 @@ namespace SRTPluginUIRE4DirectXOverlay
 
         public override IPluginInfo Info => new PluginInfo();
 
+        public override ILogger Logger => logger;
+
         private readonly ILogger<SRTPluginUIRE4DirectXOverlay> logger;
         private IPluginHost pluginHost;
 

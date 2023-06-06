@@ -30,6 +30,7 @@
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
 		<PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
+		<PackageReference Include="SRTPluginHelper" Version="1.0.*-*" />
 		<PackageReference Include="GameOverlay.Net" Version="4.3.1" />
 	</ItemGroup>
 
